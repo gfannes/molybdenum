@@ -1,23 +1,11 @@
+mod res;
 mod cli;
 
-fn main() {
-    match my_main() {
-        Err(error) => {
-            println!("Error: {}", error.descr);
-            println!("Something went wrong");
-        }
-        Ok(()) => {
-            println!("Everything went OK");
-        }
-    }
-}
-
-fn my_main() -> Result<(), cli::Error> {
+fn my_main() -> Result<(), res::Error> {
     let mut options = cli::Options::new();
     println!("{:?}", options);
 
-    let args:Vec<String> = std::env::args().skip(1).collect();
-    options.parse(&args)?;
+    options.parse(cli::args())?;
     println!("{:?}", options);
 
     if options.print_help {
@@ -26,3 +14,16 @@ fn my_main() -> Result<(), cli::Error> {
 
     Ok(())
 }
+
+fn main() {
+    match my_main() {
+        Err(error) => {
+            res::print_error(error);
+            println!("Something went wrong");
+        }
+        Ok(()) => {
+            println!("Everything went OK");
+        }
+    }
+}
+
