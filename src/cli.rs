@@ -2,7 +2,7 @@ use crate::res::{Result,MyError};
 use std::collections::VecDeque;
 
 //Represents parsed CLI options
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Eq)]
 pub struct Options {
     pub print_help: bool,
     pub input_filename: String,
@@ -33,11 +33,15 @@ pub fn args() -> Args {
 }
 
 impl Options {
-    pub fn new() -> Options {
+    pub fn default() -> Options {
         Options {
             print_help: false,
             input_filename: String::new(),
         }
+    }
+
+    pub fn new() -> Options {
+        Options::default()
     }
 
     pub fn parse(&mut self, mut args: Args) -> Result<()> {
@@ -56,9 +60,10 @@ impl Options {
                         ftor(self)?;
                     },
                     Handler::Args1(ftor) => {
-                        //Only if there is an additional arg after arg0
-                        if let Some(arg1)= args.get(0) {
+                        if let Some(arg1) = args.get(0) {
                             ftor(self, arg1)?;
+                        } else {
+                            return Err(MyError::create(&format!("Option {} expects additional argument", option.lh)));
                         }
                     },
                 }
@@ -110,5 +115,53 @@ impl Option {
 
     fn suit(&self, arg: &str) -> bool {
         self.sh == arg || self.lh == arg
+    }
+}
+
+#[test]
+fn test_Options_parse() {
+    struct Scn {
+        args: Vec<&'static str>,
+
+        parse_ok: bool,
+        options: Options,
+    }
+
+    let scns = [
+        //Positive scenarios
+        Scn{
+            args: vec!["-h"],
+            parse_ok: true,
+            options: Options{print_help: true, ..Options::default()}
+        },
+        Scn{
+            args: vec!["-i", "input_filename"],
+            parse_ok: true,
+            options: Options{input_filename: String::from("input_filename"), ..Options::default()}
+        },
+        Scn{
+            args: vec!["-h", "-i", "input_filename"],
+            parse_ok: true,
+            options: Options{print_help: true, input_filename: String::from("input_filename"), ..Options::default()}
+        },
+
+        //Negative scenarios
+        Scn{
+            args: vec!["-i"],
+            parse_ok: false,
+            options: Options{input_filename: String::from("input_filename"), ..Options::default()}
+        },
+
+    ];
+
+    for scn in scns.iter() {
+        let args: Args = scn.args.iter().map(|s|{s.to_string()}).collect();
+
+        let mut options = Options::new();
+        let ok = options.parse(args).is_ok();
+        assert_eq!(ok, scn.parse_ok);
+        if ok {
+            assert_eq!(options, scn.options);
+        }
     }
 }

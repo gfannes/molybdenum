@@ -27,3 +27,14 @@ impl MyError {
 pub fn print_error(error: Error) {
     println!("{}", error);
 }
+
+#[test]
+fn create_custom_error() {
+    let my_err = MyError::create("My custom error message");
+    let err: &Error = &my_err;
+    assert!(err.is::<MyError>());
+    let my_err_ref = err.downcast_ref::<MyError>().unwrap();
+    assert_eq!(my_err_ref.descr, "My custom error message");
+
+    assert_eq!(format!("{}", my_err_ref), "MyError: My custom error message");
+}
