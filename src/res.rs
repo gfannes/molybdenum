@@ -24,10 +24,6 @@ impl MyError {
     }
 }
 
-pub fn print_error(error: Error) {
-    println!("{}", error);
-}
-
 #[test]
 fn create_custom_error() {
     let my_err = MyError::create("My custom error message");

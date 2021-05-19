@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 pub struct Options {
     pub print_help: bool,
     pub input_filename: String,
+    pub verbose_level: i32,
 }
 
 //Creates a Vec of CLI option handlers
@@ -22,7 +23,19 @@ fn generate_option_vec() -> Vec<Option> {
         Ok(())
     })));
 
+    v.push(Option::new("-V", "--verbose-level", "Verbosity level", Handler::Args1(|options, level|{
+        options.verbose_level = my_to_i32(level, format!("Could not convert \"{}\" into a verbosity level", level))?;
+        Ok(())
+    })));
+
     v
+}
+
+fn my_to_i32(s: &str, fail_msg: String) -> Result<i32> {
+    match s.parse::<i32>() {
+        Ok(v) => Ok(v),
+        _ => Err(MyError::create(&fail_msg)),
+    }
 }
 
 //Represents raw CLI arguments as provided by the user
@@ -37,6 +50,7 @@ impl Options {
         Options {
             print_help: false,
             input_filename: String::new(),
+            verbose_level: 0,
         }
     }
 
@@ -81,7 +95,7 @@ impl Options {
             s.push_str(&o.help());
             s.push_str("\n");
         }
-        s.push_str("Created by Geert Fannes\n");
+        s.push_str("Created by Geert Fannes");
 
         s
     }
@@ -119,7 +133,7 @@ impl Option {
 }
 
 #[test]
-fn test_Options_parse() {
+fn test_options_parse() {
     struct Scn {
         args: Vec<&'static str>,
 
@@ -129,29 +143,35 @@ fn test_Options_parse() {
 
     let scns = [
         //Positive scenarios
+        //Single option
         Scn{
             args: vec!["-h"],
             parse_ok: true,
-            options: Options{print_help: true, ..Options::default()}
+            options: Options{print_help: true, ..Options::default()},
         },
         Scn{
             args: vec!["-i", "input_filename"],
             parse_ok: true,
-            options: Options{input_filename: String::from("input_filename"), ..Options::default()}
+            options: Options{input_filename: String::from("input_filename"), ..Options::default()},
         },
+        Scn{
+            args: vec!["-V", "3"],
+            parse_ok: true,
+            options: Options{verbose_level: 3, ..Options::default()},
+        },
+        //All options
         Scn{
             args: vec!["-h", "-i", "input_filename"],
             parse_ok: true,
-            options: Options{print_help: true, input_filename: String::from("input_filename"), ..Options::default()}
+            options: Options{print_help: true, input_filename: String::from("input_filename"), ..Options::default()},
         },
 
         //Negative scenarios
         Scn{
             args: vec!["-i"],
             parse_ok: false,
-            options: Options{input_filename: String::from("input_filename"), ..Options::default()}
+            options: Options{input_filename: String::from("input_filename"), ..Options::default()},
         },
-
     ];
 
     for scn in scns.iter() {
