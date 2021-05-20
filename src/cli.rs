@@ -2,10 +2,10 @@ use crate::res::{Result,MyError};
 use std::collections::VecDeque;
 
 //Represents parsed CLI options
-#[derive(Debug,PartialEq,Eq,Default)]
+#[derive(Debug,PartialEq,Eq)]
 pub struct Options {
     pub print_help: bool,
-    pub input_filename: String,
+    pub root_folder: String,
     pub verbose_level: i32,
 }
 
@@ -18,8 +18,8 @@ fn generate_option_vec() -> Vec<Option> {
         Ok(())
     })));
 
-    v.push(Option::new("-i", "--input-filename", "Input filename", Handler::Args1(|options, filename|{
-        options.input_filename = filename.to_string();
+    v.push(Option::new("-C", "--root-folder", "Root folder", Handler::Args1(|options, filename|{
+        options.root_folder = filename.to_string();
         Ok(())
     })));
 
@@ -39,6 +39,16 @@ pub type Args = VecDeque<String>;
 
 pub fn args() -> Args {
     std::env::args().skip(1).collect()
+}
+
+impl Default for Options {
+    fn default() -> Options {
+        Options{
+            print_help: false,
+            root_folder: String::from("."),
+            verbose_level: 0,
+        }
+    }
 }
 
 impl Options {
@@ -136,9 +146,9 @@ fn test_options_parse() {
             options: Options{print_help: true, ..Options::default()},
         },
         Scn{
-            args: vec!["-i", "input_filename"],
+            args: vec!["-C", "root_folder"],
             parse_ok: true,
-            options: Options{input_filename: String::from("input_filename"), ..Options::default()},
+            options: Options{root_folder: String::from("root_folder"), ..Options::default()},
         },
         Scn{
             args: vec!["-V", "3"],
@@ -147,9 +157,9 @@ fn test_options_parse() {
         },
         //All options
         Scn{
-            args: vec!["-h", "-i", "input_filename"],
+            args: vec!["-h", "-C", "root_folder"],
             parse_ok: true,
-            options: Options{print_help: true, input_filename: String::from("input_filename"), ..Options::default()},
+            options: Options{print_help: true, root_folder: String::from("root_folder"), ..Options::default()},
         },
 
         //Negative scenarios
@@ -159,14 +169,14 @@ fn test_options_parse() {
             options: Options{..Options::default()},
         },
         Scn{
-            args: vec!["-i"],
+            args: vec!["-C"],
             parse_ok: false,
-            options: Options{input_filename: String::from("input_filename"), ..Options::default()},
+            options: Options{root_folder: String::from("root_folder"), ..Options::default()},
         },
         Scn{
-            args: vec!["-i", "-h"],
+            args: vec!["-C", "-h"],
             parse_ok: true,
-            options: Options{print_help: false, input_filename: String::from("-h"), ..Options::default()},
+            options: Options{print_help: false, root_folder: String::from("-h"), ..Options::default()},
         },
         ];
 

@@ -1,5 +1,6 @@
 #[macro_use ]mod res;
 mod cli;
+mod folder;
 
 fn main() -> res::Result<()> {
     let mut options = cli::Options::new();
@@ -13,39 +14,12 @@ fn main() -> res::Result<()> {
         println!("{}", options.help());
     }
 
-    let mut path = std::path::PathBuf::new();
-    path.push(".");
-    visit_dir(path)?;
+    let folder_scanner = folder::Scanner::new(&options.root_folder);
 
-    Ok(())
-}
+    let paths = folder_scanner.scan()?;
 
-fn my_is_hidden(p: &std::ffi::OsStr) -> bool {
-    if let Some(s) = p.to_str() {
-        if let Some(ch) = s.chars().next() {
-            ch == '.'
-        } else {
-            false
-        }
-    } else {
-        false
-    }
-}
-
-fn visit_dir(parent_path: std::path::PathBuf) -> res::Result<()> {
-
-    for entry in std::fs::read_dir(parent_path)? {
-        let path = entry?.path();
-        let filename = path.file_name().unwrap();
-        println!("{:?} {:?}", path, filename);
-        if my_is_hidden(&filename) {
-            println!(" => This is hidden");
-            continue;
-        }
-
-        if path.is_dir() {
-            visit_dir(path)?;
-        }
+    for path in &paths {
+        println!("{}", path.display());
     }
 
     Ok(())
