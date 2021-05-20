@@ -24,18 +24,14 @@ fn generate_option_vec() -> Vec<Option> {
     })));
 
     v.push(Option::new("-V", "--verbose-level", "Verbosity level", Handler::Args1(|options, level|{
-        options.verbose_level = my_to_i32(level, format!("Could not convert \"{}\" into a verbosity level", level))?;
+        match level.parse::<i32>() {
+            Err(_) => fail!("Could not convert \"{}\" into a verbosity level", level),
+            Ok(v) => options.verbose_level = v,
+        }
         Ok(())
     })));
 
     v
-}
-
-fn my_to_i32(s: &str, fail_msg: String) -> Result<i32> {
-    match s.parse::<i32>() {
-        Ok(v) => Ok(v),
-        _ => Err(MyError::create(&fail_msg)),
-    }
 }
 
 //Represents raw CLI arguments as provided by the user
@@ -58,14 +54,14 @@ impl Options {
 
             //Find option that matches with arg0
             match options.iter().find(|option|{option.suit(&arg0)}) {
-                None => return Err(MyError::create(&format!("Unknown option \"{}\"", arg0))),
+                None => fail!("Unknown option \"{}\"", &arg0),
 
                 //Call the handler, taking care of its amount of arguments
                 Some(option) => match option.handler {
                     Handler::Args0(ftor) => ftor(self)?,
 
                     Handler::Args1(ftor) => match args.pop_front() {
-                        None => return Err(MyError::create(&format!("Option {} expects additional argument", option.lh))),
+                        None => fail!("Option {} expects additional argument", option.lh),
 
                         Some(arg1) => ftor(self, &arg1)?,
                     },

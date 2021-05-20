@@ -1,4 +1,4 @@
-mod res;
+#[macro_use ]mod res;
 mod cli;
 
 fn main() -> res::Result<()> {
@@ -15,7 +15,7 @@ fn main() -> res::Result<()> {
 
     let mut path = std::path::PathBuf::new();
     path.push(".");
-    visit_dir(path);
+    visit_dir(path)?;
 
     Ok(())
 }
@@ -43,7 +43,9 @@ fn visit_dir(parent_path: std::path::PathBuf) -> res::Result<()> {
             continue;
         }
 
-        visit_dir(path);
+        if path.is_dir() {
+            visit_dir(path)?;
+        }
     }
 
     Ok(())

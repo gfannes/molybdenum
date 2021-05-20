@@ -24,8 +24,20 @@ impl MyError {
     }
 }
 
+macro_rules! fail {
+    ($fmt:expr) => {
+        return Err(MyError::create(&format!($fmt)))
+    };
+    ($fmt:expr, $($arg:expr),*) => {
+        return Err(MyError::create(&format!($fmt, $($arg),*)))
+    };
+    ($fmt:expr, $($arg:expr),+ ,) => {
+        fail!($fmt, $($arg),*)
+    };
+}
+
 #[test]
-fn create_custom_error() {
+fn test_create_custom_error() {
     let my_err = MyError::create("My custom error message");
     let err: &Error = &my_err;
     assert!(err.is::<MyError>());
@@ -33,4 +45,24 @@ fn create_custom_error() {
     assert_eq!(my_err_ref.descr, "My custom error message");
 
     assert_eq!(format!("{}", my_err_ref), "MyError: My custom error message");
+}
+
+#[test]
+fn test_fail_macro() {
+    type R = Result<()>;
+    type Ftor = Box<dyn Fn() -> R>;
+
+    let ftors = [
+        Box::new(||fail!("arg 0, trailing comma N")) as Ftor,
+        Box::new(||fail!("arg 0, trailing comma Y",)),
+        Box::new(||fail!("arg 1, trailing comma N {}",42)),
+        Box::new(||fail!("arg 1, trailing comma Y {}",42,)),
+        Box::new(||fail!("arg 2, trailing comma N {} {}",42, 43)),
+        Box::new(||fail!("arg 2, trailing comma Y {} {}",42, 43, )),
+    ];
+
+    for ftor in &ftors {
+        let res = ftor();
+        assert!(res.is_err())
+    }
 }
