@@ -2,7 +2,7 @@ use crate::res::{Result,MyError};
 use std::collections::VecDeque;
 
 //Represents parsed CLI options
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug,PartialEq,Eq,Default)]
 pub struct Options {
     pub print_help: bool,
     pub input_filename: String,
@@ -46,14 +46,6 @@ pub fn args() -> Args {
 }
 
 impl Options {
-    pub fn default() -> Options {
-        Options {
-            print_help: false,
-            input_filename: String::new(),
-            verbose_level: 0,
-        }
-    }
-
     pub fn new() -> Options {
         Options::default()
     }
@@ -61,26 +53,23 @@ impl Options {
     pub fn parse(&mut self, mut args: Args) -> Result<()> {
         let options = generate_option_vec();
 
+        //Process all CLI arguments
         while let Some(arg0) = args.pop_front() {
-            for option in &options {
-                //Check if arg0 matches with this Option
-                if !option.suit(&arg0) {
-                    continue;
-                }
+
+            //Find option that matches with arg0
+            match options.iter().find(|option|{option.suit(&arg0)}) {
+                None => return Err(MyError::create(&format!("Unknown option \"{}\"", arg0))),
 
                 //Call the handler, taking care of its amount of arguments
-                match option.handler {
-                    Handler::Args0(ftor) => {
-                        ftor(self)?;
+                Some(option) => match option.handler {
+                    Handler::Args0(ftor) => ftor(self)?,
+
+                    Handler::Args1(ftor) => match args.pop_front() {
+                        None => return Err(MyError::create(&format!("Option {} expects additional argument", option.lh))),
+
+                        Some(arg1) => ftor(self, &arg1)?,
                     },
-                    Handler::Args1(ftor) => {
-                        if let Some(arg1) = args.get(0) {
-                            ftor(self, arg1)?;
-                        } else {
-                            return Err(MyError::create(&format!("Option {} expects additional argument", option.lh)));
-                        }
-                    },
-                }
+                },
             }
         }
 
@@ -134,6 +123,7 @@ impl Option {
 
 #[test]
 fn test_options_parse() {
+    #[derive(Debug)]
     struct Scn {
         args: Vec<&'static str>,
 
@@ -168,13 +158,25 @@ fn test_options_parse() {
 
         //Negative scenarios
         Scn{
+            args: vec!["--unknown-option"],
+            parse_ok: false,
+            options: Options{..Options::default()},
+        },
+        Scn{
             args: vec!["-i"],
             parse_ok: false,
             options: Options{input_filename: String::from("input_filename"), ..Options::default()},
         },
-    ];
+        Scn{
+            args: vec!["-i", "-h"],
+            parse_ok: true,
+            options: Options{print_help: false, input_filename: String::from("-h"), ..Options::default()},
+        },
+        ];
 
     for scn in scns.iter() {
+        println!("{:?}", scn);
+
         let args: Args = scn.args.iter().map(|s|{s.to_string()}).collect();
 
         let mut options = Options::new();
