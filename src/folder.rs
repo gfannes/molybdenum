@@ -1,25 +1,24 @@
 use crate::res::Result;
+use crate::cli::Options;
 use std::path::Path;
-use std::path::PathBuf;
 
-pub struct Scanner {
-    root: PathBuf,
+pub struct Scanner<'a> {
+    options: &'a Options,
 }
 
 pub type Paths = Vec<std::path::PathBuf>;
 
-impl Scanner {
-    pub fn new<P>(root: P) -> Scanner
-        where P: AsRef<Path>
+impl Scanner<'_> {
+    pub fn new<'a>(options: &'a Options) -> Scanner<'a>
     {
         Scanner{
-            root: PathBuf::from(root.as_ref()),
+            options,
         }
     }
 
-    pub fn scan(&self) -> Result<Vec<std::path::PathBuf>> {
+    pub fn scan(&self) -> Result<Paths> {
         let mut paths = Paths::new();
-        self.scan_(&self.root, &mut paths)?;
+        self.scan_(&self.options.root_folder, &mut paths)?;
         Ok(paths)
     }
 
@@ -35,7 +34,8 @@ impl Scanner {
             if file_type.is_file() {
                 if !is_hidden {
                     //strip_prefix() is used to make the paths relative from the specified root
-                    paths.push(path.strip_prefix(&self.root)?.to_path_buf());
+                    //folder
+                    paths.push(path.strip_prefix(&self.options.root_folder)?.to_path_buf());
                 }
             } else if file_type.is_dir() {
                 if !is_hidden {
@@ -58,5 +58,11 @@ where P: AsRef<Path>
 }
 
 #[test]
-fn test_scan_folder() {
+fn test_scan_folder() -> Result<()> {
+    let options = Options::new();
+    let scanner = Scanner::new(&options);
+    let paths = scanner.scan()?;
+    assert!(paths.len() > 0);
+
+    Ok(())
 }

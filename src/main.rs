@@ -14,7 +14,7 @@ fn main() -> res::Result<()> {
         println!("{}", options.help());
     }
 
-    let folder_scanner = folder::Scanner::new(&options.root_folder);
+    let folder_scanner = folder::Scanner::new(&options);
 
     let paths = folder_scanner.scan()?;
 
