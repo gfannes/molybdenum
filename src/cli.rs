@@ -1,6 +1,8 @@
 use crate::res::{Result,MyError};
 use std::collections::VecDeque;
 
+//<Specific part of CLI handling>
+//
 //Represents parsed CLI options
 #[derive(Debug,PartialEq,Eq)]
 pub struct Options {
@@ -11,6 +13,21 @@ pub struct Options {
     pub output_filenames_only: bool,
     pub search_hidden_files: bool,
     pub search_hidden_folders: bool,
+}
+
+//Default values for Options
+impl Default for Options {
+    fn default() -> Options {
+        Options{
+            output_help: false,
+            root_folder: String::from("."),
+            verbose_level: 0,
+            use_relative_paths: false,
+            output_filenames_only: false,
+            search_hidden_files: false,
+            search_hidden_folders: false,
+        }
+    }
 }
 
 //Creates a Vec of CLI option handlers
@@ -49,27 +66,20 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         ]
 }
+//</Specific part of CLI handling>
 
+//<Generic part of CLI handling>
+//
+//This should be moved to a generic layer, or even better,
+//be replaced with a CLI parsing crate from crates.io.
+//For now, this is not done because this project is still a "learning project".
+//
 //Represents raw CLI arguments as provided by the user
-pub type Args = VecDeque<String>;
+        pub type Args = VecDeque<String>;
 
-pub fn args() -> Args {
-    std::env::args().skip(1).collect()
-}
-
-impl Default for Options {
-    fn default() -> Options {
-        Options{
-            output_help: false,
-            root_folder: String::from("."),
-            verbose_level: 0,
-            use_relative_paths: false,
-            output_filenames_only: false,
-            search_hidden_files: false,
-            search_hidden_folders: false,
+        pub fn args() -> Args {
+            std::env::args().skip(1).collect()
         }
-    }
-}
 
 impl Options {
     pub fn new() -> Options {
@@ -213,3 +223,4 @@ fn test_options_parse() {
         }
     }
 }
+//</Generic part of CLI handling>
