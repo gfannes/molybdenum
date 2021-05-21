@@ -10,7 +10,7 @@ fn main() -> res::Result<()> {
         println!("{:?}", options);
     }
 
-    if options.print_help {
+    if options.output_help {
         println!("{}", options.help());
     }
 

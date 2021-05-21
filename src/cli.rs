@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 //Represents parsed CLI options
 #[derive(Debug,PartialEq,Eq)]
 pub struct Options {
-    pub print_help: bool,
+    pub output_help: bool,
     pub root_folder: String,
     pub verbose_level: i32,
     pub use_relative_paths: bool,
@@ -15,47 +15,39 @@ pub struct Options {
 
 //Creates a Vec of CLI option handlers
 fn generate_option_vec() -> Vec<Option> {
-    let mut v = Vec::new();
-
-    v.push(Option::new("-h", "--help", "Print this help", Handler::Args0(|options|{
-        options.print_help = true;
-        Ok(())
-    })));
-
-    v.push(Option::new("-C", "--root-folder", "Root folder", Handler::Args1(|options, filename|{
-        options.root_folder = filename.to_string();
-        Ok(())
-    })));
-
-    v.push(Option::new("-V", "--verbose-level", "Verbosity level", Handler::Args1(|options, level|{
-        match level.parse::<i32>() {
-            Err(_) => fail!("Could not convert \"{}\" into a verbosity level", level),
-            Ok(v) => options.verbose_level = v,
-        }
-        Ok(())
-    })));
-
-    v.push(Option::new("-R", "--relative-paths", "Use paths relative to the respective root folder", Handler::Args0(|options|{
-        options.use_relative_paths = true;
-        Ok(())
-    })));
-
-    v.push(Option::new("-l", "--filenames-only", "Output only filenames", Handler::Args0(|options|{
-        options.output_filenames_only = true;
-        Ok(())
-    })));
-
-    v.push(Option::new("-u", "--hidden-files", "Search hidden files as well", Handler::Args0(|options|{
-        options.search_hidden_files = true;
-        Ok(())
-    })));
-
-    v.push(Option::new("-U", "--hidden-folders", "Search hidden folders as well", Handler::Args0(|options|{
-        options.search_hidden_folders = true;
-        Ok(())
-    })));
-
-    v
+    vec![
+        Option::new("-h", "--help", "Print this help", Handler::Args0(|options|{
+            options.output_help = true;
+            Ok(())
+        })),
+        Option::new("-C", "--root-folder", "Root folder", Handler::Args1(|options, filename|{
+            options.root_folder = filename.to_string();
+            Ok(())
+        })),
+        Option::new("-V", "--verbose-level", "Verbosity level", Handler::Args1(|options, level|{
+            match level.parse::<i32>() {
+                Err(_) => fail!("Could not convert \"{}\" into a verbosity level", level),
+                Ok(v) => options.verbose_level = v,
+            }
+            Ok(())
+        })),
+        Option::new("-R", "--relative-paths", "Use paths relative to the respective root folder", Handler::Args0(|options|{
+            options.use_relative_paths = true;
+            Ok(())
+        })),
+        Option::new("-l", "--filenames-only", "Output only filenames", Handler::Args0(|options|{
+            options.output_filenames_only = true;
+            Ok(())
+        })),
+        Option::new("-u", "--hidden-files", "Search hidden files as well", Handler::Args0(|options|{
+            options.search_hidden_files = true;
+            Ok(())
+        })),
+        Option::new("-U", "--hidden-folders", "Search hidden folders as well", Handler::Args0(|options|{
+            options.search_hidden_folders = true;
+            Ok(())
+        })),
+        ]
 }
 
 //Represents raw CLI arguments as provided by the user
@@ -68,7 +60,7 @@ pub fn args() -> Args {
 impl Default for Options {
     fn default() -> Options {
         Options{
-            print_help: false,
+            output_help: false,
             root_folder: String::from("."),
             verbose_level: 0,
             use_relative_paths: false,
@@ -171,7 +163,7 @@ fn test_options_parse() {
         Scn{
             args: vec!["-h"],
             parse_ok: true,
-            options: Options{print_help: true, ..Options::default()},
+            options: Options{output_help: true, ..Options::default()},
         },
         Scn{
             args: vec!["-C", "root_folder"],
@@ -187,7 +179,7 @@ fn test_options_parse() {
         Scn{
             args: vec!["-h", "-C", "root_folder"],
             parse_ok: true,
-            options: Options{print_help: true, root_folder: String::from("root_folder"), ..Options::default()},
+            options: Options{output_help: true, root_folder: String::from("root_folder"), ..Options::default()},
         },
 
         //Negative scenarios
@@ -204,7 +196,7 @@ fn test_options_parse() {
         Scn{
             args: vec!["-C", "-h"],
             parse_ok: true,
-            options: Options{print_help: false, root_folder: String::from("-h"), ..Options::default()},
+            options: Options{output_help: false, root_folder: String::from("-h"), ..Options::default()},
         },
         ];
 
