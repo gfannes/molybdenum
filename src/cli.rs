@@ -13,6 +13,7 @@ pub struct Options {
     pub output_filenames_only: bool,
     pub search_hidden_files: bool,
     pub search_hidden_folders: bool,
+    pub search_pattern_str: std::option::Option<String>,
 }
 
 //Default values for Options
@@ -26,6 +27,7 @@ impl Default for Options {
             output_filenames_only: false,
             search_hidden_files: false,
             search_hidden_folders: false,
+            search_pattern_str: None,
         }
     }
 }
@@ -62,6 +64,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-U", "--hidden-folders", "Search hidden folders as well", Handler::Args0(|options|{
             options.search_hidden_folders = true;
+            Ok(())
+        })),
+        Option::new("-p", "--pattern", "Search pattern", Handler::Args1(|options, pattern|{
+            options.search_pattern_str = Some(pattern.to_string());
             Ok(())
         })),
         ]
