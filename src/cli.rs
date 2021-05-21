@@ -7,6 +7,10 @@ pub struct Options {
     pub print_help: bool,
     pub root_folder: String,
     pub verbose_level: i32,
+    pub use_relative_paths: bool,
+    pub output_filenames_only: bool,
+    pub search_hidden_files: bool,
+    pub search_hidden_folders: bool,
 }
 
 //Creates a Vec of CLI option handlers
@@ -31,6 +35,26 @@ fn generate_option_vec() -> Vec<Option> {
         Ok(())
     })));
 
+    v.push(Option::new("-R", "--relative-paths", "Use paths relative to the respective root folder", Handler::Args0(|options|{
+        options.use_relative_paths = true;
+        Ok(())
+    })));
+
+    v.push(Option::new("-l", "--filenames-only", "Output only filenames", Handler::Args0(|options|{
+        options.output_filenames_only = true;
+        Ok(())
+    })));
+
+    v.push(Option::new("-u", "--hidden-files", "Search hidden files as well", Handler::Args0(|options|{
+        options.search_hidden_files = true;
+        Ok(())
+    })));
+
+    v.push(Option::new("-U", "--hidden-folders", "Search hidden folders as well", Handler::Args0(|options|{
+        options.search_hidden_folders = true;
+        Ok(())
+    })));
+
     v
 }
 
@@ -47,6 +71,10 @@ impl Default for Options {
             print_help: false,
             root_folder: String::from("."),
             verbose_level: 0,
+            use_relative_paths: false,
+            output_filenames_only: false,
+            search_hidden_files: false,
+            search_hidden_folders: false,
         }
     }
 }

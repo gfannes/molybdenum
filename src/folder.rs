@@ -32,18 +32,22 @@ impl Scanner<'_> {
             let is_hidden = my_is_hidden(&path).unwrap_or(false);
 
             if file_type.is_file() {
-                if !is_hidden {
-                    //strip_prefix() is used to make the paths relative from the specified root
-                    //folder
-                    paths.push(path.strip_prefix(&self.options.root_folder)?.to_path_buf());
+                if !is_hidden || self.options.search_hidden_files {
+                    if self.options.use_relative_paths {
+                        //strip_prefix() is used to make the paths relative from the specified root
+                        //folder
+                        paths.push(path.strip_prefix(&self.options.root_folder)?.to_path_buf());
+                    } else {
+                        paths.push(path.to_path_buf());
+                    }
                 }
             } else if file_type.is_dir() {
-                if !is_hidden {
+                if !is_hidden || self.options.search_hidden_folders {
                     self.scan_(path, &mut paths)?
                 }
             }
             else if file_type.is_symlink() {
-
+                //Symlinks are skipped for now
             }
         }
         Ok(())

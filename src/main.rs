@@ -18,8 +18,10 @@ fn main() -> res::Result<()> {
 
     let paths = folder_scanner.scan()?;
 
-    for path in &paths {
-        println!("{}", path.display());
+    if options.output_filenames_only {
+        for path in &paths {
+            println!("{}", path.display());
+        }
     }
 
     Ok(())
