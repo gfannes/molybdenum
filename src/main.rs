@@ -5,7 +5,7 @@ mod file;
 extern crate colored;
 
 use crate::res::{MyError};
-use regex::Regex;
+use regex::bytes::Regex;
 
 use colored::Colorize;
 
@@ -43,14 +43,14 @@ fn main() -> res::Result<()> {
                             let found_match = file_data.search(&seach_pattern_re);
 
                             if found_match {
-                                println!("{}", format!("{}", file_data.path.display()).green().bold());
+                                println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
                             }
 
                             if !options.output_filenames_only {
-                                let content_str = file_data.content.as_str();
+                                let content = file_data.content.as_slice();
                                 for line in file_data.lines.iter() {
                                     if !line.matches.is_empty() {
-                                        line.print_colored(content_str);
+                                        line.print_colored(line.as_slice(content));
                                     }
                                 }
                                 if found_match {
