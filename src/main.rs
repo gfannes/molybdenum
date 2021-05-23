@@ -1,13 +1,13 @@
 #[macro_use ]mod res;
 mod cli;
 mod folder;
-mod pattern;
+mod file;
 extern crate colored;
 
 use crate::res::{MyError};
 use regex::Regex;
 
-use colored::*;
+use colored::Colorize;
 
 fn main() -> res::Result<()> {
     let mut options = cli::Options::new();
@@ -31,17 +31,33 @@ fn main() -> res::Result<()> {
             Err(_) => fail!("Search pattern \"{}\" is not a valid regex", search_pattern_str),
 
             Ok(seach_pattern_re) => {
-                let mut pattern_searcher = pattern::Searcher::new(&seach_pattern_re);
+                let mut file_data = file::Data::new();
 
                 for path in &paths {
-                    let f = std::fs::File::open(path)?;
-                    if pattern_searcher.search(&mut std::io::BufReader::new(f)) {
-                        let path_str = format!("{}", path.display());
-                        println!("{} => {} matches", path_str.green(), pattern_searcher.matches.len());
-                        for m in &pattern_searcher.matches {
-                            println!("{}:{:?}", m.line_nr, m.content);
-                        }
-                        println!("");
+                    match file_data.load(path) {
+                        Err(_) => if options.verbose_level >= 1 {
+                            println!("Warning: Skipping file \"{}\", it contains non-UTF8 characters", path.display());
+                        },
+                        Ok(()) => {
+                            file_data.split_in_lines()?;
+                            let found_match = file_data.search(&seach_pattern_re);
+
+                            if found_match {
+                                println!("{}", format!("{}", file_data.path.display()).green().bold());
+                            }
+
+                            if !options.output_filenames_only {
+                                let content_str = file_data.content.as_str();
+                                for line in file_data.lines.iter() {
+                                    if !line.matches.is_empty() {
+                                        line.print_colored(content_str);
+                                    }
+                                }
+                                if found_match {
+                                    println!("");
+                                }
+                            }
+                        },
                     }
                 }
             }
