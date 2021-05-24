@@ -27,7 +27,11 @@ fn main() -> res::Result<()> {
     let paths = folder_scanner.scan()?;
 
     if let Some(search_pattern_str) = &options.search_pattern_str {
-        match Regex::new(search_pattern_str) {
+
+        //Adjust search pattern to word boundary, if needed
+        let search_pattern_str = if options.word_boundary { format!("\\b{}\\b", search_pattern_str) } else { search_pattern_str.to_string() };
+
+        match Regex::new(&search_pattern_str) {
             Err(_) => fail!("Search pattern \"{}\" is not a valid regex", search_pattern_str),
 
             Ok(seach_pattern_re) => {

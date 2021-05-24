@@ -16,6 +16,7 @@ pub struct Options {
     pub search_pattern_str: std::option::Option<String>,
     pub replace_str: std::option::Option<String>,
     pub simulate_replace: bool,
+    pub word_boundary: bool,
 }
 
 //Default values for Options
@@ -32,6 +33,7 @@ impl Default for Options {
             search_pattern_str: None,
             replace_str: None,
             simulate_replace: false,
+            word_boundary: false,
         }
     }
 }
@@ -81,7 +83,11 @@ fn generate_option_vec() -> Vec<Option> {
         Option::new("-n", "--simulate", "Simulate replacement without writing output", Handler::Args0(|options|{
             options.simulate_replace = true;
             Ok(())
-        }))
+        })),
+        Option::new("-w", "--word", "Search for word boundary", Handler::Args0(|options|{
+            options.word_boundary = true;
+            Ok(())
+        })),
         ]
 }
 //</Specific part of CLI handling>

@@ -124,11 +124,11 @@ impl Data {
             let line_slice = line.as_slice(content_slice);
             let mut offset = 0;
             for r in line.matches.iter() {
-                f.write(&line_slice[offset..r.start]);
-                f.write(replace.as_bytes());
+                f.write(&line_slice[offset..r.start])?;
+                f.write(replace.as_bytes())?;
                 offset = r.end;
             }
-            f.write(&line_slice[offset..]);
+            f.write(&line_slice[offset..])?;
         }
         Ok(())
     }
