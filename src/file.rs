@@ -21,19 +21,28 @@ impl Line {
     pub fn as_slice<'a>(&self, s: &'a ContentSlice) -> &'a ContentSlice {
         &s[self.range.clone()]
     }
-    pub fn print_colored(&self, content: &ContentSlice) {
-        print!("{}:", format!("{}", self.nr).yellow());
-        let mut offset = 0;
-        for r in self.matches.iter() {
-            if let Ok(a_str) = from_utf8(&content[offset..r.start]) {
-                if let Ok(b_str) = from_utf8(&content[r.start..r.end]) {
-                    print!("{}{}", a_str, b_str.blue());
+    pub fn print_colored<'a>(&self, content: &ContentSlice, replace: &Option<&'a str>) {
+        let my_print = |repl: &Option<&str>|{
+            print!("{}:", format!("{}", self.nr).yellow());
+            let mut offset = 0;
+            for r in self.matches.iter() {
+                if let Ok(normal_str) = from_utf8(&content[offset..r.start]) {
+                    if let Some(highlight_str) = repl {
+                        print!("{}{}", normal_str, highlight_str.on_purple());
+                    } else if let Ok(highlight_str) = from_utf8(&content[r.start..r.end]) {
+                        print!("{}{}", normal_str, highlight_str.bright_cyan().bold());
+                    }
                 }
+                offset = r.end;
             }
-            offset = r.end;
-        }
-        if let Ok(a_str)= from_utf8(&content[offset..]) {
-            print!("{}", a_str);
+            if let Ok(normal_str)= from_utf8(&content[offset..]) {
+                print!("{}", normal_str);
+            }
+        };
+
+        my_print(&None);
+        if replace.is_some() {
+            my_print(replace);
         }
     }
 }
@@ -105,6 +114,11 @@ impl Data {
             }
         }
         found_match
+    }
+
+    pub fn write(&self, replace: &str) -> Result<()> {
+        // let f = std::fs::File::create(&self.path)?;
+        Ok(())
     }
 }
 

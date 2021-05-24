@@ -14,6 +14,8 @@ pub struct Options {
     pub search_hidden_files: bool,
     pub search_hidden_folders: bool,
     pub search_pattern_str: std::option::Option<String>,
+    pub replace_str: std::option::Option<String>,
+    pub simulate_replace: bool,
 }
 
 //Default values for Options
@@ -28,6 +30,8 @@ impl Default for Options {
             search_hidden_files: false,
             search_hidden_folders: false,
             search_pattern_str: None,
+            replace_str: None,
+            simulate_replace: false,
         }
     }
 }
@@ -70,6 +74,14 @@ fn generate_option_vec() -> Vec<Option> {
             options.search_pattern_str = Some(pattern.to_string());
             Ok(())
         })),
+        Option::new("-r", "--replace", "Replacement string", Handler::Args1(|options, replace|{
+            options.replace_str = Some(replace.to_string());
+            Ok(())
+        })),
+        Option::new("-n", "--simulate", "Simulate replacement without writing output", Handler::Args0(|options|{
+            options.simulate_replace = true;
+            Ok(())
+        }))
         ]
 }
 //</Specific part of CLI handling>

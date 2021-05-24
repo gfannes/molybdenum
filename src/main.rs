@@ -33,6 +33,8 @@ fn main() -> res::Result<()> {
             Ok(seach_pattern_re) => {
                 let mut file_data = file::Data::new();
 
+                let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
+
                 for path in &paths {
                     match file_data.load(path) {
                         Err(_) => if options.verbose_level >= 1 {
@@ -40,21 +42,23 @@ fn main() -> res::Result<()> {
                         },
                         Ok(()) => {
                             file_data.split_in_lines()?;
-                            let found_match = file_data.search(&seach_pattern_re);
-
-                            if found_match {
+                            if file_data.search(&seach_pattern_re) {
                                 println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
-                            }
 
-                            if !options.output_filenames_only {
-                                let content = file_data.content.as_slice();
-                                for line in file_data.lines.iter() {
-                                    if !line.matches.is_empty() {
-                                        line.print_colored(line.as_slice(content));
+                                if !options.output_filenames_only {
+                                    let content = file_data.content.as_slice();
+                                    for line in file_data.lines.iter() {
+                                        if !line.matches.is_empty() {
+                                            line.print_colored(line.as_slice(content), &replace);
+                                        }
                                     }
-                                }
-                                if found_match {
                                     println!("");
+                                }
+
+                                if let Some(repl) = replace {
+                                    if !options.simulate_replace {
+                                        file_data.write(repl)?;
+                                    }
                                 }
                             }
                         },
