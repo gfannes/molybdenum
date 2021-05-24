@@ -22,7 +22,7 @@ fn main() -> res::Result<()> {
         return Ok(());
     }
 
-    let folder_scanner = folder::Scanner::new(&options);
+    let folder_scanner = folder::Scanner::new(&options)?;
 
     let paths = folder_scanner.scan()?;
 

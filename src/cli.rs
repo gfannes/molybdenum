@@ -17,6 +17,8 @@ pub struct Options {
     pub replace_str: std::option::Option<String>,
     pub simulate_replace: bool,
     pub word_boundary: bool,
+    pub extensions: Vec<String>,
+    pub file_include_patterns: Vec<String>,
 }
 
 //Default values for Options
@@ -34,6 +36,8 @@ impl Default for Options {
             replace_str: None,
             simulate_replace: false,
             word_boundary: false,
+            extensions: vec![],
+            file_include_patterns: vec![],
         }
     }
 }
@@ -88,6 +92,14 @@ fn generate_option_vec() -> Vec<Option> {
             options.word_boundary = true;
             Ok(())
         })),
+        Option::new("-e", "--extension", "Search only files with given extension(s)", Handler::Args1(|options, extenion|{
+            options.extensions.push(extenion.to_string());
+            Ok(())
+        })),
+        Option::new("-f", "--include-filepath", "Add pattern to select files", Handler::Args1(|options, pattern|{
+            options.file_include_patterns.push(pattern.to_string());
+            Ok(())
+        })),
         ]
 }
 //</Specific part of CLI handling>
@@ -139,12 +151,12 @@ impl Options {
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str("Help for the Molybdenum Searcher (mo):\n");
+        s.push_str("Help for the Molybdenum Replacer (mo):\n");
         for o in generate_option_vec() {
             s.push_str(&o.help());
             s.push_str("\n");
         }
-        s.push_str("Created by Geert Fannes");
+        s.push_str(&format!("Version {}, created by Geert Fannes", env!("CARGO_PKG_VERSION")));
 
         s
     }

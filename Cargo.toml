@@ -1,5 +1,5 @@
 [package]
-name = "molybdenum"
+name = "mo"
 version = "0.1.0"
 authors = ["Geert Fannes <geert.fannes@gmail.com>"]
 edition = "2018"
