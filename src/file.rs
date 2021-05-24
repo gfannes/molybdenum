@@ -1,5 +1,6 @@
 use crate::res::Result;
 use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use std::str::from_utf8;
 use regex::bytes::Regex;
@@ -117,7 +118,18 @@ impl Data {
     }
 
     pub fn write(&self, replace: &str) -> Result<()> {
-        // let f = std::fs::File::create(&self.path)?;
+        let mut f = std::fs::File::create(&self.path)?;
+        let content_slice = &self.content;
+        for line in self.lines.iter() {
+            let line_slice = line.as_slice(content_slice);
+            let mut offset = 0;
+            for r in line.matches.iter() {
+                f.write(&line_slice[offset..r.start]);
+                f.write(replace.as_bytes());
+                offset = r.end;
+            }
+            f.write(&line_slice[offset..]);
+        }
         Ok(())
     }
 }
