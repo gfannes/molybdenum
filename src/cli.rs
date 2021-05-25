@@ -1,6 +1,7 @@
 use crate::res::{Result,MyError};
 use std::collections::VecDeque;
 use std::ffi::OsString;
+use colored::Colorize;
 
 //<Specific part of CLI handling>
 //
@@ -54,46 +55,46 @@ impl Default for Options {
 //Creates a Vec of CLI option handlers
 fn generate_option_vec() -> Vec<Option> {
     vec![
-        Option::new("-h", "--help", "Print this help", Handler::Args0(|options|{
+        Option::new("-h", "--help", "Print this help [false]", Handler::Args0(|options|{
             options.output_help = true;
             Ok(())
         })),
-        Option::new("-C", "--root-folder", "Root folder", Handler::Args1(|options, filename|{
+        Option::new("-C", "--root", "Add FOLDER as root search folder", Handler::Args1("FOLDER", |options, filename|{
             options.root_folder = filename.to_string();
             Ok(())
         })),
-        Option::new("-V", "--verbose-level", "Verbosity level", Handler::Args1(|options, level|{
+        Option::new("-V", "--verbose", "Use verbosity LEVEL [0]", Handler::Args1("LEVEL", |options, level|{
             match level.parse::<i32>() {
                 Err(_) => fail!("Could not convert \"{}\" into a verbosity level", level),
                 Ok(v) => options.verbose_level = v,
             }
             Ok(())
         })),
-        Option::new("-R", "--relative-paths", "Use paths relative to the respective root folder", Handler::Args0(|options|{
+        Option::new("-R", "--relative", "Use paths relative to the respective root folder [false]", Handler::Args0(|options|{
             options.use_relative_paths = true;
             Ok(())
         })),
-        Option::new("-l", "--filenames-only", "Output only filenames", Handler::Args0(|options|{
+        Option::new("-l", "--filenames-only", "Output only filenames [false]", Handler::Args0(|options|{
             options.output_filenames_only = true;
             Ok(())
         })),
-        Option::new("-0", "--null", "NULL-separated filename output", Handler::Args0(|options|{
+        Option::new("-0", "--null", "NULL-separated filename output [false]", Handler::Args0(|options|{
             options.null_separated_output = true;
             Ok(())
         })),
-        Option::new("-u", "--hidden-files", "Search hidden files as well", Handler::Args0(|options|{
+        Option::new("-u", "--hidden-files", "Search hidden files as well [false]", Handler::Args0(|options|{
             options.search_hidden_files = true;
             Ok(())
         })),
-        Option::new("-U", "--hidden-folders", "Search hidden folders as well", Handler::Args0(|options|{
+        Option::new("-U", "--hidden-folders", "Search hidden folders as well [false]", Handler::Args0(|options|{
             options.search_hidden_folders = true;
             Ok(())
         })),
-        Option::new("-p", "--pattern", "Search pattern", Handler::Args1(|options, pattern|{
+        Option::new("-p", "--pattern", "Use search regex PATTERN", Handler::Args1("PATTERN", |options, pattern|{
             options.search_pattern_str = Some(pattern.to_string());
             Ok(())
         })),
-        Option::new("-r", "--replace", "Replacement string", Handler::Args1(|options, replace|{
+        Option::new("-r", "--replace", "Replace search matches with STRING", Handler::Args1("STRING", |options, replace|{
             options.replace_str = Some(replace.to_string());
             Ok(())
         })),
@@ -101,27 +102,27 @@ fn generate_option_vec() -> Vec<Option> {
             options.simulate_replace = true;
             Ok(())
         })),
-        Option::new("-w", "--word", "Search for word boundary", Handler::Args0(|options|{
+        Option::new("-w", "--word", "Search for word boundary [false]", Handler::Args0(|options|{
             options.word_boundary = true;
             Ok(())
         })),
-        Option::new("-e", "--extension", "Add search extension (or)", Handler::Args1(|options, extenion|{
+        Option::new("-e", "--extension", "Add search EXTENSION (or)", Handler::Args1("EXTENSION", |options, extenion|{
             options.extensions.push(OsString::from(extenion));
             Ok(())
         })),
-        Option::new("-f", "--include-filepath", "Add pattern to select files (and)", Handler::Args1(|options, pattern|{
+        Option::new("-f", "--include-filepath", "Add PATTERN to select files (and)", Handler::Args1("PATTERN", |options, pattern|{
             options.file_include_pattern_vec.push(pattern.to_string());
             Ok(())
         })),
-        Option::new("-F", "--exclude-filepath", "Add pattern to exclude files (or)", Handler::Args1(|options, pattern|{
+        Option::new("-F", "--exclude-filepath", "Add PATTERN to exclude files (or)", Handler::Args1("PATTERN", |options, pattern|{
             options.file_exclude_pattern_vec.push(pattern.to_string());
             Ok(())
         })),
-        Option::new("-A", "--output-after", "Output NUMBER lines after each match", Handler::Args1(|options, number|{
+        Option::new("-A", "--output-after", "Output NUMBER lines after each match [0]", Handler::Args1("NUMBER", |options, number|{
             options.output_after = number.parse()?;
             Ok(())
         })),
-        Option::new("-B", "--output-before", "Output NUMBER lines before each match", Handler::Args1(|options, number|{
+        Option::new("-B", "--output-before", "Output NUMBER lines before each match [0]", Handler::Args1("NUMBER", |options, number|{
             options.output_before = number.parse()?;
             Ok(())
         })),
@@ -161,7 +162,7 @@ impl Options {
                 Some(option) => match option.handler {
                     Handler::Args0(ftor) => ftor(self)?,
 
-                    Handler::Args1(ftor) => match args.pop_front() {
+                    Handler::Args1(name, ftor) => match args.pop_front() {
                         None => fail!("Option {} expects additional argument", option.lh),
 
                         Some(arg1) => ftor(self, &arg1)?,
@@ -176,9 +177,19 @@ impl Options {
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str("Help for the Molybdenum Replacer (mo):\n");
-        for o in generate_option_vec() {
-            s.push_str(&o.help());
+        s.push_str(&format!("Help for the {} (mo):\n", "Molybdenum Replacer".green()));
+        let option_vec = generate_option_vec();
+        let max_sh_len = option_vec.iter().map(|o|o.sh.len()).max().unwrap();
+        let max_lh_len = option_vec.iter().map(|o|o.lh.len()).max().unwrap();
+        let max_name_len = option_vec.iter().map(|o|{
+            if let Handler::Args1(name,_) = o.handler {
+                name.len()
+            } else {
+                0
+            }
+        }).max().unwrap();
+        for o in option_vec.iter() {
+            s.push_str(&o.help(max_sh_len, max_lh_len, max_name_len));
             s.push_str("\n");
         }
         s.push_str(&format!("Version {}, created by Geert Fannes", env!("CARGO_PKG_VERSION")));
@@ -190,7 +201,7 @@ impl Options {
 //Handler for the raw CLI arguments
 enum Handler {
     Args0(Handler0),
-    Args1(Handler1),
+    Args1(&'static str, Handler1),
 }
 type Handler0 = fn(&mut Options) -> Result<()>;
 type Handler1 = fn(&mut Options, &str) -> Result<()>;
@@ -209,8 +220,12 @@ impl Option {
         o
     }
 
-    fn help(&self) -> String {
-        format!("\t{}\t{}\t{}", self.sh, self.lh, self.descr)
+    fn help(&self, max_sh_len: usize, max_lh_len: usize, name_len: usize) -> String {
+        let name = match self.handler {
+            Handler::Args1(name,_) => name,
+            _ => "",
+        };
+        format!("    {:max_sh_len$}|{:max_lh_len$} {:name_len$}    {}", self.sh.yellow(), self.lh.yellow(), name.blue(), self.descr, max_sh_len = max_sh_len, max_lh_len = max_lh_len, name_len = name_len)
     }
 
     fn suit(&self, arg: &str) -> bool {
