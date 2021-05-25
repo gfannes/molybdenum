@@ -26,6 +26,7 @@ impl Line {
     }
 
     pub fn search_for(&mut self, re: &Regex, content: &ContentSlice) -> bool {
+        self.matches.clear();
         let mut found_match = false;
         for m in re.find_iter(self.as_slice(content)) {
             self.matches.push(m.start()..m.end());

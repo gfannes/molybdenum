@@ -115,7 +115,7 @@ where P: AsRef<Path>
 #[test]
 fn test_scan_folder() -> Result<()> {
     let options = Options::new();
-    let scanner = Scanner::new(&options);
+    let scanner = Scanner::new(&options)?;
     let paths = scanner.scan()?;
     assert!(paths.len() > 0);
 

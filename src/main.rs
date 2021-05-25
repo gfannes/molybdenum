@@ -6,11 +6,10 @@ mod line;
 mod file;
 extern crate colored;
 
-use crate::util::{Result,MyError};
+use crate::util::Result;
 use crate::line::Line;
 use std::io::BufRead;
 use std::io::Write;
-use regex::bytes::Regex;
 use colored::Colorize;
 use atty::Stream;
 
@@ -68,7 +67,7 @@ fn process_folders_(options: &cli::Options) -> Result<()> {
                             let mut delay = 0;
                             //As long as output_count is Some(>0), we will output
                             let mut output_count = None;
-                            for (ix, line) in file_data.lines.iter().enumerate() {
+                            for line in file_data.lines.iter() {
                                 if !line.matches.is_empty() {
                                     output_count = Some(delay+options.output_after+1);
                                 }
@@ -116,8 +115,6 @@ fn process_folders_(options: &cli::Options) -> Result<()> {
 fn process_stdin_(options: &cli::Options) -> Result<()> {
     let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
     let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
-    let mut buffer: Vec<u8> = vec![];
-    let mut line_nr = 0;
     let search_pattern_re_opt = match &options.search_pattern_str {
         None => None,
         Some(str) => Some(search::create_regex(str, options.word_boundary)?),
@@ -125,14 +122,16 @@ fn process_stdin_(options: &cli::Options) -> Result<()> {
     let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
     let stdout_is_tty = atty::is(Stream::Stdout);
 
+    let mut buffer: Vec<u8> = vec![];
     let mut buffer_replaced: Vec<u8> = vec![];
+    let mut line_nr = 0;
 
     while let Ok(size) = stdin_handle.read_until(0x0a_u8, &mut buffer) {
-        line_nr += 1;
-
         if size == 0 {
             break;
         }
+
+        line_nr += 1;
 
         let mut line = Line::new(line_nr, 0, buffer.len());
 
@@ -147,9 +146,9 @@ fn process_stdin_(options: &cli::Options) -> Result<()> {
             //When output is redirected, we output every line, regardless if it maches or not
             if found_match && replace.is_some() {
                 line.replace_with(&buffer, replace.unwrap(), &mut buffer_replaced);
-                stdout_handle.write(&buffer_replaced);
+                stdout_handle.write(&buffer_replaced)?;
             } else {
-                stdout_handle.write(&buffer);
+                stdout_handle.write(&buffer)?;
             }
         }
 

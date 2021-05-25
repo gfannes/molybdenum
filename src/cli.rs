@@ -152,23 +152,38 @@ impl Options {
         let options = generate_option_vec();
 
         //Process all CLI arguments
+        let mut search_pattern = None;
         while let Some(arg0) = args.pop_front() {
 
             //Find option that matches with arg0
             match options.iter().find(|option|{option.suit(&arg0)}) {
-                None => fail!("Unknown option \"{}\"", &arg0),
+                None => {
+                    if search_pattern.is_some() {
+                        fail!("Unknown option \"{}\"", &arg0);
+                    }
+                    search_pattern = Some(arg0);
+                },
 
                 //Call the handler, taking care of its amount of arguments
-                Some(option) => match option.handler {
-                    Handler::Args0(ftor) => ftor(self)?,
+                Some(option) => {
+                    if search_pattern.is_some() {
+                        fail!("You cannot add more argumets after the SEARCH_PATTERN");
+                    }
+                    match option.handler {
+                        Handler::Args0(ftor) => ftor(self)?,
 
-                    Handler::Args1(name, ftor) => match args.pop_front() {
-                        None => fail!("Option {} expects additional argument", option.lh),
+                        Handler::Args1(name, ftor) => match args.pop_front() {
+                            None => fail!("Option {} expects additional argument for {}", option.lh, name),
 
-                        Some(arg1) => ftor(self, &arg1)?,
-                    },
+                            Some(arg1) => ftor(self, &arg1)?,
+                        },
+                    }
+
                 },
             }
+        }
+        if let Some(search_pattern) = search_pattern {
+            self.search_pattern_str = Some(search_pattern);
         }
 
         Ok(())
@@ -177,7 +192,9 @@ impl Options {
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str(&format!("Help for the {} (mo):\n", "Molybdenum Replacer".green()));
+        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo (OPTION)* (SEARCH_PATTERN)?".green()));
+
+        s.push_str(&format!("{}:\n", "Options".yellow()));
         let option_vec = generate_option_vec();
         let max_sh_len = option_vec.iter().map(|o|o.sh.len()).max().unwrap();
         let max_lh_len = option_vec.iter().map(|o|o.lh.len()).max().unwrap();
@@ -192,6 +209,7 @@ impl Options {
             s.push_str(&o.help(max_sh_len, max_lh_len, max_name_len));
             s.push_str("\n");
         }
+
         s.push_str(&format!("Version {}, created by Geert Fannes", env!("CARGO_PKG_VERSION")));
 
         s
@@ -261,6 +279,11 @@ fn test_options_parse() {
             parse_ok: true,
             options: Options{verbose_level: 3, ..Options::default()},
         },
+        Scn{
+            args: vec!["SEARCH_PATTERN"],
+            parse_ok: true,
+            options: Options{search_pattern_str: Some("SEARCH_PATTERN".to_string()),..Options::default()},
+        },
         //All options
         Scn{
             args: vec!["-h", "-C", "root_folder"],
@@ -270,9 +293,9 @@ fn test_options_parse() {
 
         //Negative scenarios
         Scn{
-            args: vec!["--unknown-option"],
+            args: vec!["SEARCH_PATTERN", "-h"],
             parse_ok: false,
-            options: Options{..Options::default()},
+            options: Options{root_folder: String::from("root_folder"), search_pattern_str: Some("SEARCH_PATTERN".to_string()), ..Options::default()},
         },
         Scn{
             args: vec!["-C"],
