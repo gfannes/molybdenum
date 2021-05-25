@@ -2,12 +2,14 @@ use crate::util::{Result,MyError};
 use crate::cli::Options;
 use std::path::Path;
 use std::ffi::OsString;
+use std::collections::BTreeSet;
 use regex::bytes::Regex;
 
 pub struct Scanner<'a> {
     options: &'a Options,
     file_include_regex_vec: Vec<Regex>,
     file_exclude_regex_vec: Vec<Regex>,
+    binary_extensions: BTreeSet<OsString>,
 }
 
 pub type Paths = Vec<std::path::PathBuf>;
@@ -19,6 +21,7 @@ impl Scanner<'_> {
             options,
             file_include_regex_vec: vec![],
             file_exclude_regex_vec: vec![],
+            binary_extensions: all_binary_extensions_(),
         };
         for s in options.file_include_pattern_vec.iter() {
             match Regex::new(s) {
@@ -51,27 +54,28 @@ impl Scanner<'_> {
             let is_hidden = my_is_hidden(&path).unwrap_or(false);
 
             if file_type.is_file() {
+                //Filter against hidden file
                 if is_hidden && !self.options.search_hidden_files {
                     continue;
                 }
 
-                if !self.options.extensions.is_empty() {
-                    let mut allowed = false;
-                    if let Some(extension) = path.extension() {
+                //Filter against allowed extensions, if any
+                if let Some(extension) = path.extension() {
+                    let is_binary = self.binary_extensions.contains(extension);
+                    if is_binary && !self.options.search_binary_files {
+                        continue;
+                    }
+
+                    if !self.options.extensions.is_empty() {
                         let mut extension_dot = OsString::from(".");
                         extension_dot.push(extension);
-                        for allowed_extension in self.options.extensions.iter() {
-                            if allowed_extension == extension || allowed_extension == extension_dot.as_os_str() {
-                                allowed = true;
-                                break;
-                            }
+                        if !self.options.extensions.iter().any(|allowed_extension| allowed_extension == extension || allowed_extension == extension_dot.as_os_str()) {
+                            continue;
                         }
-                    }
-                    if !allowed {
-                        continue;
                     }
                 }
 
+                //Filter against include/exclude patterns
                 match path.to_str() {
                     None => println!("Warning: path \"{}\" is not UTF-8 and cannot be matched", path.display()),
 
@@ -110,6 +114,14 @@ where P: AsRef<Path>
 {
     let ch = path.as_ref().file_name()?.to_str()?.chars().next()?;
     Some(ch == '.')
+}
+
+fn all_binary_extensions_() -> BTreeSet<OsString> {
+    let mut set = BTreeSet::<OsString>::new();
+    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc"] {
+        set.insert(OsString::from(ext));
+    }
+    set
 }
 
 #[test]
