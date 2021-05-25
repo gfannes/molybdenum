@@ -1,11 +1,13 @@
-use crate::res::Result;
+use crate::res::{Result,MyError};
 use crate::cli::Options;
 use std::path::Path;
+use std::ffi::OsString;
 use regex::bytes::Regex;
 
 pub struct Scanner<'a> {
     options: &'a Options,
-    file_include_patterns: Vec<Regex>,
+    file_include_regex_vec: Vec<Regex>,
+    file_exclude_regex_vec: Vec<Regex>,
 }
 
 pub type Paths = Vec<std::path::PathBuf>;
@@ -13,10 +15,23 @@ pub type Paths = Vec<std::path::PathBuf>;
 impl Scanner<'_> {
     pub fn new<'a>(options: &'a Options) -> Result<Scanner<'a>>
     {
-        let scanner = Scanner{
+        let mut scanner = Scanner{
             options,
-            file_include_patterns: vec![],
+            file_include_regex_vec: vec![],
+            file_exclude_regex_vec: vec![],
         };
+        for s in options.file_include_pattern_vec.iter() {
+            match Regex::new(s) {
+                Err(_) => fail!("\"{}\" is not a valid Regex", s),
+                Ok(re) => scanner.file_include_regex_vec.push(re),
+            }
+        }
+        for s in options.file_exclude_pattern_vec.iter() {
+            match Regex::new(s) {
+                Err(_) => fail!("\"{}\" is not a valid Regex", s),
+                Ok(re) => scanner.file_exclude_regex_vec.push(re),
+            }
+        }
         Ok(scanner)
     }
 
@@ -43,12 +58,12 @@ impl Scanner<'_> {
                 if !self.options.extensions.is_empty() {
                     let mut allowed = false;
                     if let Some(extension) = path.extension() {
-                        if let Some(extension_str) = extension.to_str() {
-                            for allowed_extension in self.options.extensions.iter() {
-                                if allowed_extension == extension_str {
-                                    allowed = true;
-                                    break;
-                                }
+                        let mut extension_dot = OsString::from(".");
+                        extension_dot.push(extension);
+                        for allowed_extension in self.options.extensions.iter() {
+                            if allowed_extension == extension || allowed_extension == extension_dot.as_os_str() {
+                                allowed = true;
+                                break;
                             }
                         }
                     }
@@ -57,11 +72,17 @@ impl Scanner<'_> {
                     }
                 }
 
-                if !self.file_include_patterns.is_empty() {
-                    let mut allowed = false;
-                    if !allowed {
-                        continue;
-                    }
+                match path.to_str() {
+                    None => println!("Warning: path \"{}\" is not UTF-8 and cannot be matched", path.display()),
+
+                    Some(path_str) => {
+                        if !self.file_include_regex_vec.iter().all(|re|{re.is_match(path_str.as_bytes())}) {
+                            continue;
+                        }
+                        if self.file_exclude_regex_vec.iter().any(|re|{re.is_match(path_str.as_bytes())}) {
+                            continue;
+                        }
+                    },
                 }
 
                 if self.options.use_relative_paths {

@@ -1,5 +1,6 @@
 use crate::res::{Result,MyError};
 use std::collections::VecDeque;
+use std::ffi::OsString;
 
 //<Specific part of CLI handling>
 //
@@ -17,8 +18,9 @@ pub struct Options {
     pub replace_str: std::option::Option<String>,
     pub simulate_replace: bool,
     pub word_boundary: bool,
-    pub extensions: Vec<String>,
-    pub file_include_patterns: Vec<String>,
+    pub extensions: Vec<OsString>,
+    pub file_include_pattern_vec: Vec<String>,
+    pub file_exclude_pattern_vec: Vec<String>,
 }
 
 //Default values for Options
@@ -37,7 +39,8 @@ impl Default for Options {
             simulate_replace: false,
             word_boundary: false,
             extensions: vec![],
-            file_include_patterns: vec![],
+            file_include_pattern_vec: vec![],
+            file_exclude_pattern_vec: vec![],
         }
     }
 }
@@ -92,12 +95,16 @@ fn generate_option_vec() -> Vec<Option> {
             options.word_boundary = true;
             Ok(())
         })),
-        Option::new("-e", "--extension", "Search only files with given extension(s)", Handler::Args1(|options, extenion|{
-            options.extensions.push(extenion.to_string());
+        Option::new("-e", "--extension", "Add search extension (or)", Handler::Args1(|options, extenion|{
+            options.extensions.push(OsString::from(extenion));
             Ok(())
         })),
-        Option::new("-f", "--include-filepath", "Add pattern to select files", Handler::Args1(|options, pattern|{
-            options.file_include_patterns.push(pattern.to_string());
+        Option::new("-f", "--include-filepath", "Add pattern to select files (and)", Handler::Args1(|options, pattern|{
+            options.file_include_pattern_vec.push(pattern.to_string());
+            Ok(())
+        })),
+        Option::new("-F", "--exclude-filepath", "Add pattern to exclude files (or)", Handler::Args1(|options, pattern|{
+            options.file_exclude_pattern_vec.push(pattern.to_string());
             Ok(())
         })),
         ]
