@@ -40,7 +40,7 @@ fn process_folders_(options: &cli::Options) -> Result<()> {
 
     if let Some(search_pattern_str) = &options.search_pattern_str {
 
-        let seach_pattern_re = search::create_regex(search_pattern_str, options.word_boundary)?;
+        let seach_pattern_re = search::create_regex(search_pattern_str, options.word_boundary, options.case_sensitive)?;
         let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
         let mut file_data = file::Data::new();
 
@@ -117,7 +117,7 @@ fn process_stdin_(options: &cli::Options) -> Result<()> {
     let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
     let search_pattern_re_opt = match &options.search_pattern_str {
         None => None,
-        Some(str) => Some(search::create_regex(str, options.word_boundary)?),
+        Some(str) => Some(search::create_regex(str, options.word_boundary, options.case_sensitive)?),
     };
     let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
     let stdout_is_tty = atty::is(Stream::Stdout);

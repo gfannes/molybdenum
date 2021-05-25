@@ -96,7 +96,7 @@ pub fn test_file() -> Result<()> {
     data.split_in_lines()?;
     println!("Found {} lines", data.lines.len());
 
-    let re = search::create_regex("regex", false)?;
+    let re = search::create_regex("regex", false, false)?;
     assert!(data.search(&re));
 
     for line in &data.lines {

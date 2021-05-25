@@ -20,6 +20,7 @@ pub struct Options {
     pub replace_str: std::option::Option<String>,
     pub simulate_replace: bool,
     pub word_boundary: bool,
+    pub case_sensitive: bool,
     pub extensions: Vec<OsString>,
     pub file_include_pattern_vec: Vec<String>,
     pub file_exclude_pattern_vec: Vec<String>,
@@ -43,6 +44,7 @@ impl Default for Options {
             replace_str: None,
             simulate_replace: false,
             word_boundary: false,
+            case_sensitive: false,
             extensions: vec![],
             file_include_pattern_vec: vec![],
             file_exclude_pattern_vec: vec![],
@@ -104,6 +106,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-w", "--word", "Search for word boundary [false]", Handler::Args0(|options|{
             options.word_boundary = true;
+            Ok(())
+        })),
+        Option::new("-s", "--sensitive", "Case-sensitive search [false]", Handler::Args0(|options|{
+            options.case_sensitive = true;
             Ok(())
         })),
         Option::new("-e", "--extension", "Add search EXTENSION (or)", Handler::Args1("EXTENSION", |options, extenion|{
