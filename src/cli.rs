@@ -12,6 +12,7 @@ pub struct Options {
     pub verbose_level: i32,
     pub use_relative_paths: bool,
     pub output_filenames_only: bool,
+    pub null_separated_output: bool,
     pub search_hidden_files: bool,
     pub search_hidden_folders: bool,
     pub search_pattern_str: std::option::Option<String>,
@@ -21,6 +22,8 @@ pub struct Options {
     pub extensions: Vec<OsString>,
     pub file_include_pattern_vec: Vec<String>,
     pub file_exclude_pattern_vec: Vec<String>,
+    pub output_after: u64,
+    pub output_before: u64,
 }
 
 //Default values for Options
@@ -32,6 +35,7 @@ impl Default for Options {
             verbose_level: 0,
             use_relative_paths: false,
             output_filenames_only: false,
+            null_separated_output: false,
             search_hidden_files: false,
             search_hidden_folders: false,
             search_pattern_str: None,
@@ -41,6 +45,8 @@ impl Default for Options {
             extensions: vec![],
             file_include_pattern_vec: vec![],
             file_exclude_pattern_vec: vec![],
+            output_after: 0,
+            output_before: 0,
         }
     }
 }
@@ -69,6 +75,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-l", "--filenames-only", "Output only filenames", Handler::Args0(|options|{
             options.output_filenames_only = true;
+            Ok(())
+        })),
+        Option::new("-0", "--null", "NULL-separated filename output", Handler::Args0(|options|{
+            options.null_separated_output = true;
             Ok(())
         })),
         Option::new("-u", "--hidden-files", "Search hidden files as well", Handler::Args0(|options|{
@@ -105,6 +115,14 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-F", "--exclude-filepath", "Add pattern to exclude files (or)", Handler::Args1(|options, pattern|{
             options.file_exclude_pattern_vec.push(pattern.to_string());
+            Ok(())
+        })),
+        Option::new("-A", "--output-after", "Output NUMBER lines after each match", Handler::Args1(|options, number|{
+            options.output_after = number.parse()?;
+            Ok(())
+        })),
+        Option::new("-B", "--output-before", "Output NUMBER lines before each match", Handler::Args1(|options, number|{
+            options.output_before = number.parse()?;
             Ok(())
         })),
         ]

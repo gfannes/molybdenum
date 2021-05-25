@@ -47,13 +47,39 @@ fn main() -> res::Result<()> {
                         Ok(()) => {
                             file_data.split_in_lines()?;
                             if file_data.search(&seach_pattern_re) {
-                                println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
-
-                                if !options.output_filenames_only {
+                                if options.output_filenames_only {
+                                    if options.null_separated_output {
+                                        print!("{}\0", format!("{}", file_data.path.display()));
+                                    } else {
+                                        println!("{}", format!("{}", file_data.path.display()));
+                                    }
+                                } else {
+                                    println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
                                     let content = file_data.content.as_slice();
-                                    for line in file_data.lines.iter() {
+                                    //Iterator that is meant to be options.output_before behind the
+                                    //one driving the for loop. `delay` indicates the actual delay.
+                                    let mut delayed_line_iter = file_data.lines.iter();
+                                    let mut delay = 0;
+                                    //As long as output_count is Some(>0), we will output
+                                    let mut output_count = None;
+                                    for (ix, line) in file_data.lines.iter().enumerate() {
                                         if !line.matches.is_empty() {
-                                            line.print_colored(line.as_slice(content), &replace);
+                                            output_count = Some(delay+options.output_after+1);
+                                        }
+
+                                        if let Some(cnt) = output_count {
+                                            let delayed_line = delayed_line_iter.next().unwrap();
+                                            if cnt > 0 {
+                                                delayed_line.print_colored(delayed_line.as_slice(content), &replace);
+                                                output_count = Some(cnt-1);
+                                            } else {
+                                                println!("...");
+                                                output_count = None;
+                                            }
+                                        } else if delay < options.output_before {
+                                            delay += 1;
+                                        } else {
+                                            let _ = delayed_line_iter.next();
                                         }
                                     }
                                     println!("");
@@ -72,7 +98,11 @@ fn main() -> res::Result<()> {
         }
     } else {
         for path in &paths {
-            println!("{}", path.display());
+            if options.null_separated_output {
+                print!("{}\0", format!("{}", path.display()));
+            } else {
+                println!("{}", format!("{}", path.display()));
+            }
         }
     }
 
