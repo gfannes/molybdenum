@@ -1,15 +1,20 @@
-#[macro_use ]mod res;
+#[macro_use ]mod util;
 mod cli;
 mod folder;
+mod search;
+mod line;
 mod file;
 extern crate colored;
 
-use crate::res::{MyError};
+use crate::util::{Result,MyError};
+use crate::line::Line;
+use std::io::BufRead;
+use std::io::Write;
 use regex::bytes::Regex;
-
 use colored::Colorize;
+use atty::Stream;
 
-fn main() -> res::Result<()> {
+fn main() -> Result<()> {
     let mut options = cli::Options::new();
 
     options.parse(cli::args())?;
@@ -22,78 +27,77 @@ fn main() -> res::Result<()> {
         return Ok(());
     }
 
-    let folder_scanner = folder::Scanner::new(&options)?;
+    if atty::is(Stream::Stdin) {
+        process_folders_(&options)?;
+    } else {
+        process_stdin_(&options)?;
+    }
 
-    let paths = folder_scanner.scan()?;
+    Ok(())
+}
+
+fn process_folders_(options: &cli::Options) -> Result<()> {
+    let paths = folder::Scanner::new(&options)?.scan()?;
 
     if let Some(search_pattern_str) = &options.search_pattern_str {
 
-        //Adjust search pattern to word boundary, if needed
-        let search_pattern_str = if options.word_boundary { format!("\\b{}\\b", search_pattern_str) } else { search_pattern_str.to_string() };
+        let seach_pattern_re = search::create_regex(search_pattern_str, options.word_boundary)?;
+        let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
+        let mut file_data = file::Data::new();
 
-        match Regex::new(&search_pattern_str) {
-            Err(_) => fail!("Search pattern \"{}\" is not a valid regex", search_pattern_str),
-
-            Ok(seach_pattern_re) => {
-                let mut file_data = file::Data::new();
-
-                let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
-
-                for path in &paths {
-                    match file_data.load(path) {
-                        Err(_) => if options.verbose_level >= 1 {
-                            println!("Warning: Skipping file \"{}\", it contains non-UTF8 characters", path.display());
-                        },
-                        Ok(()) => {
-                            file_data.split_in_lines()?;
-                            if file_data.search(&seach_pattern_re) {
-                                if options.output_filenames_only {
-                                    if options.null_separated_output {
-                                        print!("{}\0", format!("{}", file_data.path.display()));
-                                    } else {
-                                        println!("{}", format!("{}", file_data.path.display()));
-                                    }
-                                } else {
-                                    println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
-                                    let content = file_data.content.as_slice();
-                                    //Iterator that is meant to be options.output_before behind the
-                                    //one driving the for loop. `delay` indicates the actual delay.
-                                    let mut delayed_line_iter = file_data.lines.iter();
-                                    let mut delay = 0;
-                                    //As long as output_count is Some(>0), we will output
-                                    let mut output_count = None;
-                                    for (ix, line) in file_data.lines.iter().enumerate() {
-                                        if !line.matches.is_empty() {
-                                            output_count = Some(delay+options.output_after+1);
-                                        }
-
-                                        if let Some(cnt) = output_count {
-                                            let delayed_line = delayed_line_iter.next().unwrap();
-                                            if cnt > 0 {
-                                                delayed_line.print_colored(delayed_line.as_slice(content), &replace);
-                                                output_count = Some(cnt-1);
-                                            } else {
-                                                println!("...");
-                                                output_count = None;
-                                            }
-                                        } else if delay < options.output_before {
-                                            delay += 1;
-                                        } else {
-                                            let _ = delayed_line_iter.next();
-                                        }
-                                    }
-                                    println!("");
+        for path in &paths {
+            match file_data.load(path) {
+                Err(_) => if options.verbose_level >= 1 {
+                    println!("Warning: Skipping file \"{}\", it contains non-UTF8 characters", path.display());
+                },
+                Ok(()) => {
+                    file_data.split_in_lines()?;
+                    if file_data.search(&seach_pattern_re) {
+                        if options.output_filenames_only {
+                            if options.null_separated_output {
+                                print!("{}\0", format!("{}", file_data.path.display()));
+                            } else {
+                                println!("{}", format!("{}", file_data.path.display()));
+                            }
+                        } else {
+                            println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
+                            let content = file_data.content.as_slice();
+                            //Iterator that is meant to be options.output_before behind the
+                            //one driving the for loop. `delay` indicates the actual delay.
+                            let mut delayed_line_iter = file_data.lines.iter();
+                            let mut delay = 0;
+                            //As long as output_count is Some(>0), we will output
+                            let mut output_count = None;
+                            for (ix, line) in file_data.lines.iter().enumerate() {
+                                if !line.matches.is_empty() {
+                                    output_count = Some(delay+options.output_after+1);
                                 }
 
-                                if let Some(repl) = replace {
-                                    if !options.simulate_replace {
-                                        file_data.write(repl)?;
+                                if let Some(cnt) = output_count {
+                                    let delayed_line = delayed_line_iter.next().unwrap();
+                                    if cnt > 0 {
+                                        delayed_line.print_colored(delayed_line.as_slice(content), &replace);
+                                        output_count = Some(cnt-1);
+                                    } else {
+                                        println!("...");
+                                        output_count = None;
                                     }
+                                } else if delay < options.output_before {
+                                    delay += 1;
+                                } else {
+                                    let _ = delayed_line_iter.next();
                                 }
                             }
-                        },
+                            println!("");
+                        }
+
+                        if let Some(repl) = replace {
+                            if !options.simulate_replace {
+                                file_data.write(repl)?;
+                            }
+                        }
                     }
-                }
+                },
             }
         }
     } else {
@@ -106,5 +110,50 @@ fn main() -> res::Result<()> {
         }
     }
 
+    Ok(())
+}
+
+fn process_stdin_(options: &cli::Options) -> Result<()> {
+    let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
+    let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
+    let mut buffer: Vec<u8> = vec![];
+    let mut line_nr = 0;
+    let search_pattern_re_opt = match &options.search_pattern_str {
+        None => None,
+        Some(str) => Some(search::create_regex(str, options.word_boundary)?),
+    };
+    let replace: Option<&str> = options.replace_str.as_ref().map(|r|r.as_str());
+    let stdout_is_tty = atty::is(Stream::Stdout);
+
+    let mut buffer_replaced: Vec<u8> = vec![];
+
+    while let Ok(size) = stdin_handle.read_until(0x0a_u8, &mut buffer) {
+        line_nr += 1;
+
+        if size == 0 {
+            break;
+        }
+
+        let mut line = Line::new(line_nr, 0, buffer.len());
+
+        let found_match = search_pattern_re_opt.as_ref().map_or(false, |re|line.search_for(re, &buffer));
+
+        if stdout_is_tty {
+            //When output is the console, we only output matches
+            if found_match {
+                line.print_colored(&buffer, &replace);
+            }
+        } else {
+            //When output is redirected, we output every line, regardless if it maches or not
+            if found_match && replace.is_some() {
+                line.replace_with(&buffer, replace.unwrap(), &mut buffer_replaced);
+                stdout_handle.write(&buffer_replaced);
+            } else {
+                stdout_handle.write(&buffer);
+            }
+        }
+
+        buffer.clear();
+    }
     Ok(())
 }

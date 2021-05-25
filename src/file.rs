@@ -1,52 +1,10 @@
-use crate::res::Result;
+use crate::util::{Result};
+use crate::line::{Line, Content};
 use std::io::Read;
 use std::io::Write;
 use std::path::PathBuf;
-use std::str::from_utf8;
 use regex::bytes::Regex;
-use colored::Colorize;
 
-// type Content = String;
-// type ContentSlice = str;
-type Content = Vec<u8>;
-type ContentSlice = [u8];
-
-type Range = std::ops::Range<usize>;
-
-pub struct Line {
-    pub nr: u64,
-    range: Range,
-    pub matches: Vec<Range>,
-}
-impl Line {
-    pub fn as_slice<'a>(&self, s: &'a ContentSlice) -> &'a ContentSlice {
-        &s[self.range.clone()]
-    }
-    pub fn print_colored<'a>(&self, content: &ContentSlice, replace: &Option<&'a str>) {
-        let my_print = |repl: &Option<&str>|{
-            print!("{}:", format!("{}", self.nr).yellow());
-            let mut offset = 0;
-            for r in self.matches.iter() {
-                if let Ok(normal_str) = from_utf8(&content[offset..r.start]) {
-                    if let Some(highlight_str) = repl {
-                        print!("{}{}", normal_str, highlight_str.on_purple());
-                    } else if let Ok(highlight_str) = from_utf8(&content[r.start..r.end]) {
-                        print!("{}{}", normal_str, highlight_str.bright_cyan().bold());
-                    }
-                }
-                offset = r.end;
-            }
-            if let Ok(normal_str)= from_utf8(&content[offset..]) {
-                print!("{}", normal_str);
-            }
-        };
-
-        my_print(&None);
-        if replace.is_some() {
-            my_print(replace);
-        }
-    }
-}
 
 pub struct Data {
     pub path: PathBuf,
@@ -73,7 +31,6 @@ impl Data {
             let md_size = md.len() as usize;
             self.content.reserve(md_size);
             self.content.clear();
-            // let act_size = f.read_to_string(&mut self.content)?;
             let act_size = f.read_to_end(&mut self.content)?;
             assert_eq!(md_size, act_size);
 
@@ -94,11 +51,7 @@ impl Data {
                 Some(ix) => ix+1,
             };
 
-            self.lines.push(Line{
-                nr: line_nr,
-                range: start_ix..start_ix+size,
-                matches: vec![],
-            });
+            self.lines.push(Line::new(line_nr, start_ix, size));
             content = &content[size..];
             start_ix += size;
         }
@@ -109,10 +62,7 @@ impl Data {
         let content = &self.content;
         let mut found_match = false;
         for line in self.lines.iter_mut() {
-            for m in re.find_iter(line.as_slice(content)) {
-                line.matches.push(m.start()..m.end());
-                found_match = true;
-            }
+            found_match = line.search_for(re, content) || found_match;
         }
         found_match
     }

@@ -1,4 +1,4 @@
-use crate::res::{Result,MyError};
+use crate::util::{Result,MyError};
 use crate::cli::Options;
 use std::path::Path;
 use std::ffi::OsString;

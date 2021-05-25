@@ -36,6 +36,8 @@ macro_rules! fail {
     };
 }
 
+pub type Range = std::ops::Range<usize>;
+
 #[test]
 fn test_create_custom_error() {
     let my_err = MyError::create("My custom error message");

@@ -1,4 +1,4 @@
-use crate::res::{Result,MyError};
+use crate::util::{Result,MyError};
 use std::collections::VecDeque;
 use std::ffi::OsString;
 use colored::Colorize;
