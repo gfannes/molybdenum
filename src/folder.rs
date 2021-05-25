@@ -118,7 +118,7 @@ where P: AsRef<Path>
 
 fn all_binary_extensions_() -> BTreeSet<OsString> {
     let mut set = BTreeSet::<OsString>::new();
-    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc"] {
+    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc", "zip", "gz", "gzip", "o"] {
         set.insert(OsString::from(ext));
     }
     set
