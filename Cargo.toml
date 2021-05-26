@@ -1,8 +1,11 @@
 [package]
 name = "mo"
+description = "Recursive search and replace CLI application"
 version = "0.1.0"
 authors = ["Geert Fannes <geert.fannes@gmail.com>"]
 edition = "2018"
+license = "EUPL-1.1"
+repository = "https://github.com/gfannes/molybdenum"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
