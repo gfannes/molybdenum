@@ -1,20 +1,29 @@
-# Molybdenum Replacer
+# The Molybdenum Replacer
 
-Search and replace CLI application.
+Recursive _search and replace_ CLI application.
 
-## Why another search and replace tool?
+## Installation
+
+* Install [rust](https://www.rust-lang.org/learn/get-started)
+* Clone the repo: `git clone https://github.com/gfannes/molybdenum`
+* Build and install the app: `cargo install --path molybdenum`
+* Verify success: `mo -h` should print its help and version
+
+## Yet another tool?
 
 Powerful _search_ can be found without problems, eg, [grep](https://man7.org/linux/man-pages/man1/grep.1.html), [ack](https://beyondgrep.com/), [ag](https://github.com/ggreer/the_silver_searcher), [ripgrep](https://github.com/BurntSushi/ripgrep) or [broot](https://github.com/Canop/broot).
-Tools for _replacing_ recursively in a folder are more difficult to find, although some exist: [fart-it](https://github.com/lionello/fart-it).
-Typically, people use a combination of searching, [xargs](https://www.thegeekstuff.com/2013/12/xargs-examples/) and a replacement tool line [sed](https://www.grymoire.com/Unix/Sed.html) or [rpl](http://rpl.sourceforge.net/).
-I use code searching a lot, it's also difficult to break things with code searching. Recursive replacing is clearly much more dangerous and occurs less frequently; it's difficult to remember a `search-xargs-replace` combination and things tend to get broken very quickly. Especially problematic with this approach is that the `search` tool used to filter the set of files and perform a dry-run, is _not per-se_ using the same search query as the `replace` tool. It would be better if a single tool could be used for every-day searching _and_ replacing. This is exactly what _The Molybdenum Replacer_ intends to achieve.
 
-In addition, I find the `-g` option for `ag` and `rg` confusing: I would expect `ag -g /auro/ -w test` to search for the word `test` in all files that have `/auro/` in their path, but that is not what actually happens. It filters with `/auro/` _and_ `test` against the filename.
+Tools for _replacing_ recursively in a folder are more difficult to find, although some exist: [fart-it](https://github.com/lionello/fart-it). Typically, people use a combination of searching, [xargs](https://www.thegeekstuff.com/2013/12/xargs-examples/) and a replacement tool like [sed](https://www.grymoire.com/Unix/Sed.html) or [rpl](http://rpl.sourceforge.net/).
 
-The real reason, of course, is that I had some free time and was looking for a project/excuse to learn [rust](https://www.rust-lang.org/).
+I use code searching a lot to investigate a large source code base before attempting a replace. Even with 100k files, search is fast and fairly easy. Recursively _replacing_ text is much more dangerous, especially if it requires the combination of several less frequently used tools; it's difficult to remember a `search-xargs-replace` combination if not used on a daily basis. On top of this, the `search` tool used to filter the set of files and perform a dry-run, is _not per-se_ using the _same search query_ as the `replace` tool. After all, these are different tools. It would be better if a single tool could be used for every-day searching _and_ replacing. This is exactly what _The Molybdenum Replacer_ intends to achieve.
 
+In addition, I find it difficult to use `ag` and `rg` to filter against the file path _and_ search for content _in_ the remaining files; the `-g` option for `ag` and `rg` is confusing in my opinion. As such, I would expect `ag -g /auro/ -w test` to search for the word `test` in all files that have `/auro/` in their path, but that is not what actually happens. It filters with `/auro/` _and_ `test` against the filename (or something that looks like it).
+
+The real reason, of course, is that I had some free time and was looking for a nice project/excuse to learn [rust](https://www.rust-lang.org/).
 
 ## Implemented Features
+
+Following features are implemented and usable in the current version:
 
 * Recursive _search_ in a nested folder structure, line-based
   * Fast enough to make it usable. My impression is that it's performance is between [ag](https://github.com/ggreer/the_silver_searcher) and [ripgrep](https://github.com/BurntSushi/ripgrep).
@@ -27,10 +36,12 @@ The real reason, of course, is that I had some free time and was looking for a p
 
 ## Future Features
 
+Following features might be added sooner or later:
+
 * Improved performance
   * `mo` is currently single-threaded. To achieve [ripgrep](https://github.com/BurntSushi/ripgrep)-like performance, all CPU's are probably required.
   * When `-l` is used to only output filenames, `mo` can stop searching after the first match.
-* Use better name
+* Use a better name
   * Nobody can remember `molybdenum`, and it is very hard to type. `mo` is better, but difficult to search on the internet.
 * Support for using regex capture groups during replacement
 * Better detection of binary files
