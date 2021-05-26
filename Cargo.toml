@@ -1,5 +1,5 @@
 [package]
-name = "mo"
+name = "molybdenum"
 description = "Recursive search and replace CLI application"
 version = "0.1.0"
 authors = ["Geert Fannes <geert.fannes@gmail.com>"]
@@ -8,6 +8,9 @@ license = "EUPL-1.1"
 repository = "https://github.com/gfannes/molybdenum"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "mo"
 
 [dependencies]
 regex = "1.5.4"

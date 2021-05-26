@@ -1,5 +1,5 @@
-#[macro_use ]mod util;
-mod cli;
+#[macro_use]pub mod util;
+pub mod cli;
 mod folder;
 mod search;
 mod line;
@@ -13,29 +13,7 @@ use std::io::Write;
 use colored::Colorize;
 use atty::Stream;
 
-fn main() -> Result<()> {
-    let mut options = cli::Options::new();
-
-    options.parse(cli::args())?;
-    if options.verbose_level >= 1 {
-        println!("{:?}", options);
-    }
-
-    if options.output_help {
-        println!("{}", options.help());
-        return Ok(());
-    }
-
-    if atty::is(Stream::Stdin) {
-        process_folders_(&options)?;
-    } else {
-        process_stdin_(&options)?;
-    }
-
-    Ok(())
-}
-
-fn process_folders_(options: &cli::Options) -> Result<()> {
+pub fn process_folders(options: &cli::Options) -> Result<()> {
     let paths = folder::Scanner::new(&options)?.scan()?;
 
     if let Some(search_pattern_str) = &options.search_pattern_str {
@@ -112,7 +90,7 @@ fn process_folders_(options: &cli::Options) -> Result<()> {
     Ok(())
 }
 
-fn process_stdin_(options: &cli::Options) -> Result<()> {
+pub fn process_stdin(options: &cli::Options) -> Result<()> {
     let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
     let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
     let search_pattern_re_opt = match &options.search_pattern_str {
