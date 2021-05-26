@@ -73,6 +73,10 @@ impl Scanner<'_> {
                             continue;
                         }
                     }
+                } else {
+                    if !self.options.extensions.is_empty() {
+                        continue;
+                    }
                 }
 
                 //Filter against include/exclude patterns
