@@ -1,3 +1,20 @@
+task :default do
+    sh "rake -T"
+end
+
+desc "Test the cargo build"
+task :test do
+    sh "cargo build"
+    sh "cargo test"
+end
+
+desc "Create and publish the release package"
+task :release do
+    sh "cargo package"
+    sh "cargo publish"
+end
+
+desc "Test performance against ag and rg"
 task :perf do
     Dir.chdir("#{ENV['HOME']}/aa") do
         {

@@ -37,7 +37,7 @@ pub fn process_folders(options: &cli::Options) -> Result<()> {
                                 println!("{}", format!("{}", file_data.path.display()));
                             }
                         } else {
-                            println!("{} {}", format!("{}", file_data.path.display()).green().bold(), file_data.lines.len());
+                            println!("{}", format!("{}", file_data.path.display()).green().bold());
                             let content = file_data.content.as_slice();
                             //Iterator that is meant to be options.output_before behind the
                             //one driving the for loop. `delay` indicates the actual delay.
