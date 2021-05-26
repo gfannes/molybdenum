@@ -4,10 +4,43 @@ Recursive _search and replace_ CLI application.
 
 ## Installation
 
-* Install [rust](https://www.rust-lang.org/learn/get-started)
+### Directly via cargo
+
+* Install [rust](https://www.rust-lang.org/learn/get-started), this should also install [cargo](https://doc.rust-lang.org/cargo/)
+* Run `cargo install molybdenum`
+* Verify success: `mo -h` should print its help and version
+
+### From source code
+
+* Install [rust](https://www.rust-lang.org/learn/get-started), this should also install [cargo](https://doc.rust-lang.org/cargo/)
 * Clone the repo: `git clone https://github.com/gfannes/molybdenum`
 * Build and install the app: `cargo install --path molybdenum`
 * Verify success: `mo -h` should print its help and version
+
+## Basic usage
+
+Following commands demonstrate how `mo` can be used to accomplish different tasks:
+
+* Create list of filenames, only filtering against the pathname itself:
+  * `mo`: When no search pattern is specified, only the filenames are listed
+  * `mo -l`: Explicitly ask to output only the filenames
+  * `mo -C FOLDER`: Use _FOLDER_ as root for searching
+  * `mo -e hpp -e cpp`: Only take files with `hpp` and `cpp` extension into account
+  * `mo -f PART`: Keep filenames that match against _PART_
+  * `mo -F PART`: Keep filenames that do not match against _PART_
+  * `mo -0`: Use `0x00` to separate filenames. This is handy when using the output with `xargs`.
+  * `mo -u -U -a`: Take hidden files, folders and binary files into account as well
+* Search for a given regex pattern:
+  * `mo PATTERN`: Search for _PATTERN_ in files recursively
+  * `mo -p PATTERN`: Search for _PATTERN_ in files recursively
+  * `mo -w PATTERN`: Search for _PATTERN_ in files recursively, adding _word-boundary_ constraints arround _PATTERN_
+  * `mo -s PATTERN`: Search for _PATTERN_, _case-sensitive_
+  * `mo -B 10 -A 10 PATTERN`: Output a context of 10 additional lines _before_ and _after_ each match
+* Replace matches with a given STRING:
+  * `mo -r naald -n -w needle`: _Simulate_ the replacement of the the word `needle` with the Dutch word `naald`
+  * `mo -r naald -w needle`: _Really_ replace the word `needle` with the Dutch word `naald`
+
+Next to this, `mo` detects if input comes from a console or redirection, and will act accordingly, as well as for its output: `mo` can be used to report or make replacements in a piped stream as well.
 
 ## Yet another tool?
 
@@ -41,7 +74,7 @@ Following features might be added sooner or later:
 * Improved performance
   * `mo` is currently single-threaded. To achieve [ripgrep](https://github.com/BurntSushi/ripgrep)-like performance, all CPU's are probably required.
   * When `-l` is used to only output filenames, `mo` can stop searching after the first match.
-* Use a better name
+* Use a better name, I just picked something that was still available.
   * Nobody can remember `molybdenum`, and it is very hard to type. `mo` is better, but difficult to search on the internet.
 * Support for using regex capture groups during replacement
 * Better detection of binary files
@@ -76,7 +109,7 @@ Scenario: count all files
     Output:  184675  187146 16589947
 ```
 
-### Search for word in C/C++ source code
+### Search for word in C++ source code
 
 ```
 Scenario: search for word `test` in .cpp files in subfolder `core` where path contains /auro/
