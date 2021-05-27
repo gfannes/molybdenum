@@ -39,6 +39,8 @@ Following commands demonstrate how `mo` can be used to accomplish different task
 * Replace matches with a given STRING:
   * `mo -r naald -n -w needle`: _Simulate_ the replacement of the the word `needle` with the Dutch word `naald`
   * `mo -r naald -w needle`: _Really_ replace the word `needle` with the Dutch word `naald`
+* Combining with `xargs`
+  * `mo -l -C FOLDER -0 | xargs -0 -r mo -i PATTERN`: Note the `-i` option to ensure `mo` will search in files and not Stdin. In addition, the `xargs -r` option should be set to ensure nothing will run if no filepaths produced.
 
 Next to this, `mo` detects if input comes from a console or redirection, and will act accordingly, as well as for its output: `mo` can be used to report or make replacements in a piped stream as well.
 
@@ -66,11 +68,22 @@ Following features are implemented and usable in the current version:
   * Output all input when output is redirected
 * Support for non-UTF8 filename and content
 * Crude detection of binary files
+* Flexible specification of search root and pattern
+  * Allow search root(s) on top of pattern
+  * Allow dashed options after the search root and pattern
+* Improved xargs integration
+  * Support searching a single file when specified as root
+  * Support for overriding the auto-detected stdin-redirection/tty-console detection
+* Support for multiple search roots
 
 ## Future Features
 
 Following features might be added sooner or later:
 
+* Support for filtering against `.gitignore` files
+* Support for file type sets
+* Allow zero-argument options to be merged: `mo -ws test`
+* Allow input separator to be set explicitly. Now, this is hardcoded `0x0a`.
 * Improved performance
   * `mo` is currently single-threaded. To achieve [ripgrep](https://github.com/BurntSushi/ripgrep)-like performance, all CPU's are probably required.
   * When `-l` is used to only output filenames, `mo` can stop searching after the first match.
@@ -78,7 +91,6 @@ Following features might be added sooner or later:
   * Nobody can remember `molybdenum`, and it is very hard to type. `mo` is better, but difficult to search on the internet.
 * Support for using regex capture groups during replacement
 * Better detection of binary files
-* Support for filtering against `.gitignore` files
 * Rollback when writing replacement file fails
 * Improved testing
   * More and better unit tests
@@ -86,9 +98,6 @@ Following features might be added sooner or later:
   * Performance tests and some reporting around this
 * Binary releases on [github](https://github.com/gfannes/molybdenum)
 * Improved color scheme for people using a light background theme
-* Support for file type sets
-* Allow options without argument to be merged
-* Allow input separator to be set explicitly. Now, this is hardcoded `0x0a`.
 
 ## Performance
 

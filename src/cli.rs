@@ -9,15 +9,15 @@ use colored::Colorize;
 #[derive(Debug,PartialEq,Eq)]
 pub struct Options {
     pub output_help: bool,
-    pub root_folder: String,
+    pub roots: Vec<String>,
     pub verbose_level: i32,
     pub use_relative_paths: bool,
     pub output_filenames_only: bool,
     pub null_separated_output: bool,
     pub search_hidden_files: bool,
     pub search_hidden_folders: bool,
-    pub search_pattern_str: std::option::Option<String>,
-    pub replace_str: std::option::Option<String>,
+    pub search_pattern_opt: std::option::Option<String>,
+    pub replace_opt: std::option::Option<String>,
     pub simulate_replace: bool,
     pub word_boundary: bool,
     pub case_sensitive: bool,
@@ -27,6 +27,7 @@ pub struct Options {
     pub file_exclude_pattern_vec: Vec<String>,
     pub output_after: u64,
     pub output_before: u64,
+    pub input_from_file_opt: std::option::Option<bool>,
 }
 
 //Default values for Options
@@ -34,15 +35,15 @@ impl Default for Options {
     fn default() -> Options {
         Options{
             output_help: false,
-            root_folder: String::from("."),
+            roots: vec![],
             verbose_level: 0,
             use_relative_paths: false,
             output_filenames_only: false,
             null_separated_output: false,
             search_hidden_files: false,
             search_hidden_folders: false,
-            search_pattern_str: None,
-            replace_str: None,
+            search_pattern_opt: None,
+            replace_opt: None,
             simulate_replace: false,
             word_boundary: false,
             case_sensitive: false,
@@ -52,6 +53,7 @@ impl Default for Options {
             file_exclude_pattern_vec: vec![],
             output_after: 0,
             output_before: 0,
+            input_from_file_opt: None,
         }
     }
 }
@@ -63,8 +65,8 @@ fn generate_option_vec() -> Vec<Option> {
             options.output_help = true;
             Ok(())
         })),
-        Option::new("-C", "--root", "Add FOLDER as root search folder", Handler::Args1("FOLDER", |options, filename|{
-            options.root_folder = filename.to_string();
+        Option::new("-C", "--root", "Add FOLDER as root search folder", Handler::Args1("FOLDER", |options, folder|{
+            options.roots.push(folder.to_string());
             Ok(())
         })),
         Option::new("-V", "--verbose", "Use verbosity LEVEL [0]", Handler::Args1("LEVEL", |options, level|{
@@ -95,11 +97,14 @@ fn generate_option_vec() -> Vec<Option> {
             Ok(())
         })),
         Option::new("-p", "--pattern", "Use search regex PATTERN", Handler::Args1("PATTERN", |options, pattern|{
-            options.search_pattern_str = Some(pattern.to_string());
+            if let Some(pattern) = &options.search_pattern_opt {
+                fail!("Search PATTERN is already set to \"{}\"", pattern);
+            }
+            options.search_pattern_opt = Some(pattern.to_string());
             Ok(())
         })),
         Option::new("-r", "--replace", "Replace search matches with STRING", Handler::Args1("STRING", |options, replace|{
-            options.replace_str = Some(replace.to_string());
+            options.replace_opt = Some(replace.to_string());
             Ok(())
         })),
         Option::new("-n", "--simulate", "Simulate replacement without writing output", Handler::Args0(|options|{
@@ -138,6 +143,14 @@ fn generate_option_vec() -> Vec<Option> {
             options.output_before = number.parse()?;
             Ok(())
         })),
+        Option::new("-i", "--input-file", "Take input from file, override auto-detection", Handler::Args0(|options|{
+            options.input_from_file_opt = Some(true);
+            Ok(())
+        })),
+        Option::new("-I", "--input-stream", "Take input from redirected stream, override auto-detection", Handler::Args0(|options|{
+            options.input_from_file_opt = Some(false);
+            Ok(())
+        })),
         ]
 }
 //</Specific part of CLI handling>
@@ -164,23 +177,20 @@ impl Options {
         let options = generate_option_vec();
 
         //Process all CLI arguments
-        let mut search_pattern = None;
         while let Some(arg0) = args.pop_front() {
 
             //Find option that matches with arg0
             match options.iter().find(|option|{option.suit(&arg0)}) {
                 None => {
-                    if search_pattern.is_some() {
-                        fail!("Unknown option \"{}\"", &arg0);
+                    if self.search_pattern_opt.is_none() {
+                        self.search_pattern_opt = Some(arg0);
+                    } else { 
+                        self.roots.push(arg0.to_string());
                     }
-                    search_pattern = Some(arg0);
                 },
 
                 //Call the handler, taking care of its amount of arguments
                 Some(option) => {
-                    if search_pattern.is_some() {
-                        fail!("You cannot add more argumets after the SEARCH_PATTERN");
-                    }
                     match option.handler {
                         Handler::Args0(ftor) => ftor(self)?,
 
@@ -194,9 +204,6 @@ impl Options {
                 },
             }
         }
-        if let Some(search_pattern) = search_pattern {
-            self.search_pattern_str = Some(search_pattern);
-        }
 
         Ok(())
     }
@@ -204,7 +211,8 @@ impl Options {
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo (OPTION)* (SEARCH_PATTERN)?".green()));
+        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo (--OPTION)* (PATTERN)? (--OPTION|PATH)*".green()));
+        s.push_str("Dashed options, search PATTERN and PATHs can be mixed, PATTERN should come before PATHs\n");
 
         s.push_str(&format!("{}:\n", "Options".yellow()));
         let option_vec = generate_option_vec();
@@ -282,9 +290,19 @@ fn test_options_parse() {
             options: Options{output_help: true, ..Options::default()},
         },
         Scn{
-            args: vec!["-C", "root_folder"],
+            args: vec!["-C", "ROOT"],
             parse_ok: true,
-            options: Options{root_folder: String::from("root_folder"), ..Options::default()},
+            options: Options{roots: vec![String::from("ROOT")], ..Options::default()},
+        },
+        Scn{
+            args: vec!["-C", "FOLDER1", "-C", "FOLDER2"],
+            parse_ok: true,
+            options: Options{roots: vec![String::from("FOLDER1"), String::from("FOLDER2")], ..Options::default()},
+        },
+        Scn{
+            args: vec!["PATTERN", "FOLDER1", "FOLDER2"],
+            parse_ok: true,
+            options: Options{search_pattern_opt: Some(String::from("PATTERN")), roots: vec![String::from("FOLDER1"), String::from("FOLDER2")], ..Options::default()},
         },
         Scn{
             args: vec!["-V", "3"],
@@ -292,32 +310,32 @@ fn test_options_parse() {
             options: Options{verbose_level: 3, ..Options::default()},
         },
         Scn{
-            args: vec!["SEARCH_PATTERN"],
+            args: vec!["PATTERN"],
             parse_ok: true,
-            options: Options{search_pattern_str: Some("SEARCH_PATTERN".to_string()),..Options::default()},
+            options: Options{search_pattern_opt: Some("PATTERN".to_string()),..Options::default()},
+        },
+        Scn{
+            args: vec!["PATTERN", "-h"],
+            parse_ok: true,
+            options: Options{output_help: true, search_pattern_opt: Some("PATTERN".to_string()), ..Options::default()},
         },
         //All options
         Scn{
-            args: vec!["-h", "-C", "root_folder"],
+            args: vec!["-h", "-C", "ROOT"],
             parse_ok: true,
-            options: Options{output_help: true, root_folder: String::from("root_folder"), ..Options::default()},
+            options: Options{output_help: true, roots: vec![String::from("ROOT")], ..Options::default()},
         },
 
         //Negative scenarios
         Scn{
-            args: vec!["SEARCH_PATTERN", "-h"],
-            parse_ok: false,
-            options: Options{root_folder: String::from("root_folder"), search_pattern_str: Some("SEARCH_PATTERN".to_string()), ..Options::default()},
-        },
-        Scn{
             args: vec!["-C"],
             parse_ok: false,
-            options: Options{root_folder: String::from("root_folder"), ..Options::default()},
+            options: Options{roots: vec![String::from("ROOT")], ..Options::default()},
         },
         Scn{
             args: vec!["-C", "-h"],
             parse_ok: true,
-            options: Options{output_help: false, root_folder: String::from("-h"), ..Options::default()},
+            options: Options{output_help: false, roots: vec![String::from("-h")], ..Options::default()},
         },
         ];
 

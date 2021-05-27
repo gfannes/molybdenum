@@ -8,6 +8,11 @@ task :test do
     sh "cargo test"
 end
 
+desc "Install"
+task :install => :test do
+    sh "cargo install --path ./ --force"
+end
+
 desc "Create and publish the release package"
 task :release do
     sh "cargo package"

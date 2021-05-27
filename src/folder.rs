@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 use regex::bytes::Regex;
 
 pub struct Scanner<'a> {
+    root: std::path::PathBuf,
     options: &'a Options,
     file_include_regex_vec: Vec<Regex>,
     file_exclude_regex_vec: Vec<Regex>,
@@ -15,9 +16,11 @@ pub struct Scanner<'a> {
 pub type Paths = Vec<std::path::PathBuf>;
 
 impl Scanner<'_> {
-    pub fn new<'a>(options: &'a Options) -> Result<Scanner<'a>>
+    pub fn new<'a, P>(root: P, options: &'a Options) -> Result<Scanner<'a>>
+        where P: AsRef<std::path::Path>
     {
         let mut scanner = Scanner{
+            root: std::path::PathBuf::from(root.as_ref()),
             options,
             file_include_regex_vec: vec![],
             file_exclude_regex_vec: vec![],
@@ -40,7 +43,7 @@ impl Scanner<'_> {
 
     pub fn scan(&self) -> Result<Paths> {
         let mut paths = Paths::new();
-        self.scan_(&self.options.root_folder, &mut paths)?;
+        self.scan_(&self.root, &mut paths)?;
         Ok(paths)
     }
 
@@ -96,7 +99,7 @@ impl Scanner<'_> {
                 if self.options.use_relative_paths {
                     //strip_prefix() is used to make the paths relative from the specified root
                     //folder
-                    paths.push(path.strip_prefix(&self.options.root_folder)?.to_path_buf());
+                    paths.push(path.strip_prefix(&self.root)?.to_path_buf());
                 } else {
                     paths.push(path.to_path_buf());
                 }
@@ -131,7 +134,7 @@ fn all_binary_extensions_() -> BTreeSet<OsString> {
 #[test]
 fn test_scan_folder() -> Result<()> {
     let options = Options::new();
-    let scanner = Scanner::new(&options)?;
+    let scanner = Scanner::new(".", &options)?;
     let paths = scanner.scan()?;
     assert!(paths.len() > 0);
 

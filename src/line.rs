@@ -35,13 +35,13 @@ impl Line {
         found_match
     }
 
-    pub fn print_colored<'a>(&self, content: &ContentSlice, replace: &Option<&'a str>) {
-        let my_print = |repl: &Option<&str>|{
+    pub fn print_colored(&self, content: &ContentSlice, replace: &Option<String>) {
+        let my_print = |repl: &Option<String>|{
             print!("{}:", format!("{}", self.nr).yellow());
             let mut offset = 0;
             for r in self.matches.iter() {
                 if let Ok(normal_str) = from_utf8(&content[offset..r.start]) {
-                    if let Some(highlight_str) = repl {
+                    if let Some(highlight_str) = &repl {
                         print!("{}{}", normal_str, highlight_str.on_purple());
                     } else if let Ok(highlight_str) = from_utf8(&content[r.start..r.end]) {
                         print!("{}{}", normal_str, highlight_str.bright_cyan().bold());
