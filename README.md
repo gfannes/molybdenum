@@ -40,7 +40,7 @@ Following commands demonstrate how `mo` can be used to accomplish different task
   * `mo -r naald -n -w needle`: _Simulate_ the replacement of the the word `needle` with the Dutch word `naald`
   * `mo -r naald -w needle`: _Really_ replace the word `needle` with the Dutch word `naald`
 * Combining with `xargs`
-  * `mo -l -C FOLDER -0 | xargs -0 -r mo -i PATTERN`: Note the `-i` option to ensure `mo` will search in files and not Stdin. In addition, the `xargs -r` option should be set to ensure nothing will run if no filepaths produced.
+  * `mo -l -C FOLDER -0 | xargs -0 -r mo -i PATTERN`: Note the `-i` option to ensure `mo` will search in files and not Stdin. In addition, the `xargs -r` option should be set to ensure nothing will run if no filepaths are produced.
 
 Next to this, `mo` detects if input comes from a console or redirection, and will act accordingly, as well as for its output: `mo` can be used to report or make replacements in a piped stream as well.
 
