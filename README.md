@@ -1,6 +1,6 @@
 # The Molybdenum Replacer
 
-Recursive _search and replace_ CLI application.
+Recursive, line-based _search and replace_ CLI application.
 
 ## Installation
 
@@ -75,18 +75,22 @@ Following features are implemented and usable in the current version:
   * Support searching a single file when specified as root
   * Support for overriding the auto-detected stdin-redirection/tty-console detection
 * Support for multiple search roots
+* Support for filtering against `.gitignore` files
 
 ## Future Features
 
 Following features might be added sooner or later:
 
-* Support for filtering against `.gitignore` files
 * Support for file type sets
 * Allow zero-argument options to be merged: `mo -ws test`
 * Allow input separator to be set explicitly. Now, this is hardcoded `0x0a`.
 * Improved performance
   * `mo` is currently single-threaded. To achieve [ripgrep](https://github.com/BurntSushi/ripgrep)-like performance, all CPU's are probably required.
   * When `-l` is used to only output filenames, `mo` can stop searching after the first match.
+* Report a single line per match when redirected output is detected
+  * Allows for counting matches with `wc`
+* Support for omitting the line number of a match
+* Support for inverting the matches per line
 * Use a better name, I just picked something that was still available.
   * Nobody can remember `molybdenum`, and it is very hard to type. `mo` is better, but difficult to search on the internet.
 * Support for using regex capture groups during replacement

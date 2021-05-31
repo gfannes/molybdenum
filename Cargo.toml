@@ -1,7 +1,7 @@
 [package]
 name = "molybdenum"
 description = "Recursive search and replace CLI application"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Geert Fannes <geert.fannes@gmail.com>"]
 edition = "2018"
 license = "EUPL-1.1"
@@ -16,3 +16,4 @@ name = "mo"
 regex = "1.5.4"
 colored = "2.0.0"
 atty = "0.2.14"
+ignore = "0.4.17"

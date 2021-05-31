@@ -15,7 +15,7 @@ pub struct Options {
     pub output_filenames_only: bool,
     pub null_separated_output: bool,
     pub search_hidden_files: bool,
-    pub search_hidden_folders: bool,
+    pub search_ignored_files: bool,
     pub search_pattern_opt: std::option::Option<String>,
     pub replace_opt: std::option::Option<String>,
     pub simulate_replace: bool,
@@ -41,7 +41,7 @@ impl Default for Options {
             output_filenames_only: false,
             null_separated_output: false,
             search_hidden_files: false,
-            search_hidden_folders: false,
+            search_ignored_files: false,
             search_pattern_opt: None,
             replace_opt: None,
             simulate_replace: false,
@@ -92,8 +92,8 @@ fn generate_option_vec() -> Vec<Option> {
             options.search_hidden_files = true;
             Ok(())
         })),
-        Option::new("-U", "--hidden-folders", "Search hidden folders as well [false]", Handler::Args0(|options|{
-            options.search_hidden_folders = true;
+        Option::new("-U", "--ignored-files", "Search ignored files as well [false]", Handler::Args0(|options|{
+            options.search_ignored_files = true;
             Ok(())
         })),
         Option::new("-p", "--pattern", "Use search regex PATTERN", Handler::Args1("PATTERN", |options, pattern|{

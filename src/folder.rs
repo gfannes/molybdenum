@@ -4,6 +4,7 @@ use std::path::Path;
 use std::ffi::OsString;
 use std::collections::BTreeSet;
 use regex::bytes::Regex;
+use ignore::WalkBuilder;
 
 pub struct Scanner<'a> {
     root: std::path::PathBuf,
@@ -43,25 +44,30 @@ impl Scanner<'_> {
 
     pub fn scan(&self) -> Result<Paths> {
         let mut paths = Paths::new();
-        self.scan_(&self.root, &mut paths)?;
+        self.walk_(&self.root, &mut paths);
         Ok(paths)
     }
 
-    fn scan_<P>(&self, parent: P, mut paths: &mut Paths) -> Result<()>
+    fn walk_<P>(&self, parent: P, mut paths: &mut Paths) -> Result<()>
         where P: AsRef<Path>
     {
-        for entry in std::fs::read_dir(parent.as_ref())? {
+        let walk = WalkBuilder::new(parent)
+            .hidden(!self.options.search_hidden_files)
+            .ignore(!self.options.search_ignored_files)
+            .git_ignore(!self.options.search_ignored_files)
+            .git_exclude(!self.options.search_ignored_files)
+            .git_global(!self.options.search_ignored_files)
+            .build();
+
+        for entry in walk {
             let entry = entry?;
-            let file_type = entry.file_type()?;
-            let path = entry.path();
-            let is_hidden = my_is_hidden(&path).unwrap_or(false);
+            let file_type = match entry.file_type() {
+                None => fail!("Could not get file type for \"{:?}\"", entry),
+                Some(ft) => ft,
+            };
+            let path = entry.into_path();
 
             if file_type.is_file() {
-                //Filter against hidden file
-                if is_hidden && !self.options.search_hidden_files {
-                    continue;
-                }
-
                 //Filter against allowed extensions, if any
                 if let Some(extension) = path.extension() {
                     let is_binary = self.binary_extensions.contains(extension);
@@ -103,13 +109,6 @@ impl Scanner<'_> {
                 } else {
                     paths.push(path.to_path_buf());
                 }
-            } else if file_type.is_dir() {
-                if !is_hidden || self.options.search_hidden_folders {
-                    self.scan_(path, &mut paths)?
-                }
-            }
-            else if file_type.is_symlink() {
-                //Symlinks are skipped for now
             }
         }
         Ok(())
