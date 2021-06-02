@@ -115,13 +115,6 @@ impl Scanner<'_> {
     }
 }
 
-fn my_is_hidden<P>(path: P) -> Option<bool>
-where P: AsRef<Path>
-{
-    let ch = path.as_ref().file_name()?.to_str()?.chars().next()?;
-    Some(ch == '.')
-}
-
 fn all_binary_extensions_() -> BTreeSet<OsString> {
     let mut set = BTreeSet::<OsString>::new();
     for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc", "zip", "gz", "gzip", "o"] {
