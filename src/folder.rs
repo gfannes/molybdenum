@@ -44,11 +44,11 @@ impl Scanner<'_> {
 
     pub fn scan(&self) -> Result<Paths> {
         let mut paths = Paths::new();
-        self.walk_(&self.root, &mut paths);
+        self.walk_(&self.root, &mut paths)?;
         Ok(paths)
     }
 
-    fn walk_<P>(&self, parent: P, mut paths: &mut Paths) -> Result<()>
+    fn walk_<P>(&self, parent: P, paths: &mut Paths) -> Result<()>
         where P: AsRef<Path>
     {
         let walk = WalkBuilder::new(parent)
