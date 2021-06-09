@@ -44,6 +44,20 @@ Following commands demonstrate how `mo` can be used to accomplish different task
 
 Next to this, `mo` detects if input comes from a console or redirection, and will act accordingly, as well as for its output: `mo` can be used to report or make replacements in a piped stream as well.
 
+## Interactive file selection
+
+Following `bash` functions allows you to _open a file (o)_ or _change to a folder (c)_ based on the fuzzy search functionality of [fzf](https://github.com/junegunn/fzf). You can pass them any argument that `mo` accepts, making them handy interactive tools. They rely on [bat](https://github.com/sharkdp/bat) to provide a preview, and [nvr](https://github.com/mhinz/neovim-remote) to open the selected file in a new or already running instance of [neovim](http://neovim.io/), and [zoxide](https://github.com/ajeetdsouza/zoxide) to register and track your most popular folders.
+
+```
+o() {
+    mo -l $* | fzf --multi --preview 'bat --style=numbers --color=always --line-range :500 {}' --preview-window 'right:60%' | xargs -I % nvr --remote-tab %
+}
+
+c() {
+    z `mo -L $* | fzf`
+}
+```
+
 ## Yet another tool?
 
 Powerful _search_ can be found without problems, eg, [grep](https://man7.org/linux/man-pages/man1/grep.1.html), [ack](https://beyondgrep.com/), [ag](https://github.com/ggreer/the_silver_searcher), [ripgrep](https://github.com/BurntSushi/ripgrep) or [broot](https://github.com/Canop/broot).
@@ -76,6 +90,7 @@ Following features are implemented and usable in the current version:
   * Support for overriding the auto-detected stdin-redirection/tty-console detection
 * Support for multiple search roots
 * Support for filtering against `.gitignore` files
+* Support for listing folder names using the `-L` option
 
 ## Future Features
 

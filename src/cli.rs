@@ -5,6 +5,12 @@ use colored::Colorize;
 
 //<Specific part of CLI handling>
 //
+#[derive(Debug,PartialEq,Eq)]
+pub enum OutputOnly {
+    Filenames,
+    Folders,
+}
+//
 //Represents parsed CLI options
 #[derive(Debug,PartialEq,Eq)]
 pub struct Options {
@@ -12,7 +18,7 @@ pub struct Options {
     pub roots: Vec<String>,
     pub verbose_level: i32,
     pub use_relative_paths: bool,
-    pub output_filenames_only: bool,
+    pub output_only: std::option::Option<OutputOnly>,
     pub null_separated_output: bool,
     pub search_hidden_files: bool,
     pub search_ignored_files: bool,
@@ -38,7 +44,7 @@ impl Default for Options {
             roots: vec![],
             verbose_level: 0,
             use_relative_paths: false,
-            output_filenames_only: false,
+            output_only: None,
             null_separated_output: false,
             search_hidden_files: false,
             search_ignored_files: false,
@@ -81,7 +87,11 @@ fn generate_option_vec() -> Vec<Option> {
             Ok(())
         })),
         Option::new("-l", "--filenames-only", "Output only filenames [false]", Handler::Args0(|options|{
-            options.output_filenames_only = true;
+            options.output_only = Some(OutputOnly::Filenames);
+            Ok(())
+        })),
+        Option::new("-L", "--folders-only", "Output only folders [false]", Handler::Args0(|options|{
+            options.output_only = Some(OutputOnly::Folders);
             Ok(())
         })),
         Option::new("-0", "--null", "NULL-separated filename output [false]", Handler::Args0(|options|{

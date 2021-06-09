@@ -1,5 +1,5 @@
 use crate::util::{Result,MyError};
-use crate::cli::Options;
+use crate::cli::{Options,OutputOnly};
 use std::path::Path;
 use std::ffi::OsString;
 use std::collections::BTreeSet;
@@ -67,41 +67,23 @@ impl Scanner<'_> {
             };
             let path = entry.into_path();
 
-            if file_type.is_file() {
-                //Filter against allowed extensions, if any
-                if let Some(extension) = path.extension() {
-                    let is_binary = self.binary_extensions.contains(extension);
-                    if is_binary && !self.options.search_binary_files {
-                        continue;
-                    }
+            let do_add_path = match self.options.output_only {
+                None => true
+                    && file_type.is_file()
+                    && self.extension_ok_(&path)
+                    && self.name_ok_(&path),
 
-                    if !self.options.extensions.is_empty() {
-                        let mut extension_dot = OsString::from(".");
-                        extension_dot.push(extension);
-                        if !self.options.extensions.iter().any(|allowed_extension| allowed_extension == extension || allowed_extension == extension_dot.as_os_str()) {
-                            continue;
-                        }
-                    }
-                } else {
-                    if !self.options.extensions.is_empty() {
-                        continue;
-                    }
-                }
+                Some(OutputOnly::Filenames) => true
+                    && file_type.is_file()
+                    && self.extension_ok_(&path)
+                    && self.name_ok_(&path),
 
-                //Filter against include/exclude patterns
-                match path.to_str() {
-                    None => println!("Warning: path \"{}\" is not UTF-8 and cannot be matched", path.display()),
+                Some(OutputOnly::Folders) => true
+                    && file_type.is_dir()
+                    && self.name_ok_(&path),
+            };
 
-                    Some(path_str) => {
-                        if !self.file_include_regex_vec.iter().all(|re|{re.is_match(path_str.as_bytes())}) {
-                            continue;
-                        }
-                        if self.file_exclude_regex_vec.iter().any(|re|{re.is_match(path_str.as_bytes())}) {
-                            continue;
-                        }
-                    },
-                }
-
+            if do_add_path {
                 if self.options.use_relative_paths {
                     //strip_prefix() is used to make the paths relative from the specified root
                     //folder
@@ -112,6 +94,45 @@ impl Scanner<'_> {
             }
         }
         Ok(())
+    }
+
+    fn extension_ok_(&self, path: &std::path::Path) -> bool {
+        //Filter against allowed extensions, if any
+        if let Some(extension) = path.extension() {
+            let is_binary = self.binary_extensions.contains(extension);
+            if is_binary && !self.options.search_binary_files {
+                return false;
+            }
+
+            if !self.options.extensions.is_empty() {
+                let mut extension_dot = OsString::from(".");
+                extension_dot.push(extension);
+                if !self.options.extensions.iter().any(|allowed_extension| allowed_extension == extension || allowed_extension == extension_dot.as_os_str()) {
+                    return false;
+                }
+            }
+        } else {
+            if !self.options.extensions.is_empty() {
+                return false;
+            }
+        }
+        true
+    }
+    fn name_ok_(&self, path: &std::path::Path) -> bool {
+        //Filter against include/exclude patterns
+        match path.to_str() {
+            None => println!("Warning: path \"{}\" is not UTF-8 and cannot be matched", path.display()),
+
+            Some(path_str) => {
+                if !self.file_include_regex_vec.iter().all(|re|{re.is_match(path_str.as_bytes())}) {
+                    return false;
+                }
+                if self.file_exclude_regex_vec.iter().any(|re|{re.is_match(path_str.as_bytes())}) {
+                    return false;
+                }
+            },
+        }
+        true
     }
 }
 

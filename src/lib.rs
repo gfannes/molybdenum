@@ -36,6 +36,10 @@ where P: AsRef<std::path::Path>
 }
 
 pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data: &mut file::Data) -> Result<()> {
+    if options.output_only == Some(cli::OutputOnly::Folders) {
+        return Ok(());
+    }
+
     match file_data.load(path) {
         Err(_) => if options.verbose_level >= 1 {
             println!("Warning: Skipping \"{}\", could not load file", path.display());
@@ -44,7 +48,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
         Ok(()) => {
             file_data.split_in_lines()?;
             if file_data.search() {
-                if options.output_filenames_only {
+                if options.output_only == Some(cli::OutputOnly::Filenames) {
                     if options.null_separated_output {
                         print!("{}\0", format!("{}", file_data.path.display()));
                     } else {
