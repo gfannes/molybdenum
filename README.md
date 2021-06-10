@@ -37,8 +37,8 @@ Following commands demonstrate how `mo` can be used to accomplish different task
   * `mo -s PATTERN`: Search for _PATTERN_, _case-sensitive_
   * `mo -B 10 -A 10 PATTERN`: Output a context of 10 additional lines _before_ and _after_ each match
 * Replace matches with a given STRING:
-  * `mo -r naald -n -w needle`: _Simulate_ the replacement of the the word `needle` with the Dutch word `naald`
-  * `mo -r naald -w needle`: _Really_ replace the word `needle` with the Dutch word `naald`
+  * `mo needle -w -r naald -n`: _Simulate_ the replacement of the the word `needle` with the Dutch word `naald`
+  * `mo needle -w -r naald`: _Really_ replace the word `needle` with the Dutch word `naald`
 * Combining with `xargs`
   * `mo -l -C FOLDER -0 | xargs -0 -r mo -i PATTERN`: Note the `-i` option to ensure `mo` will search in files and not Stdin. In addition, the `xargs -r` option should be set to ensure nothing will run if no filepaths are produced.
 
@@ -49,10 +49,18 @@ Next to this, `mo` detects if input comes from a console or redirection, and wil
 Following `bash` functions allows you to _open a file (o)_ or _change to a folder (c)_ based on the fuzzy search functionality of [fzf](https://github.com/junegunn/fzf). You can pass them any argument that `mo` accepts, making them handy interactive tools. They rely on [bat](https://github.com/sharkdp/bat) to provide a preview, and [nvr](https://github.com/mhinz/neovim-remote) to open the selected file in a new or already running instance of [neovim](http://neovim.io/), and [zoxide](https://github.com/ajeetdsouza/zoxide) to register and track your most popular folders.
 
 ```
+# Open file using `bat` as preview
 o() {
     mo -l $* | fzf --multi --preview 'bat --style=numbers --color=always --line-range :500 {}' --preview-window 'right:60%' | xargs -I % nvr --remote-tab %
 }
 
+# Open file using `mo` as preview
+s() {
+    export all_args="$*"
+    mo -l $* | fzf --multi --preview 'mo -c -i ${all_args} -C {}' --preview-window 'right:60%' | xargs -I % nvr --remote-tab %
+}
+
+# Change to dir using `z`
 c() {
     z `mo -L $* | fzf`
 }
@@ -96,6 +104,9 @@ Following features are implemented and usable in the current version:
 
 Following features might be added sooner or later:
 
+* By default, do not replace: invert interpretation fo `-n` (and use a different name)
+* Support for arguments without a _shorthand_ notation
+* Support for displaying a content with a single argument, preferably `-c`
 * Support for file type sets
 * Allow zero-argument options to be merged: `mo -ws test`
 * Allow input separator to be set explicitly. Now, this is hardcoded `0x0a`.

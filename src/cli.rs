@@ -34,6 +34,7 @@ pub struct Options {
     pub output_after: u64,
     pub output_before: u64,
     pub input_from_file_opt: std::option::Option<bool>,
+    pub colored_output_always: std::option::Option<bool>,
 }
 
 //Default values for Options
@@ -60,6 +61,7 @@ impl Default for Options {
             output_after: 0,
             output_before: 0,
             input_from_file_opt: None,
+            colored_output_always: None,
         }
     }
 }
@@ -159,6 +161,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-I", "--input-stream", "Take input from redirected stream, override auto-detection", Handler::Args0(|options|{
             options.input_from_file_opt = Some(false);
+            Ok(())
+        })),
+        Option::new("-c", "--color-output", "Always produce colored output", Handler::Args0(|options|{
+            options.colored_output_always = Some(true);
             Ok(())
         })),
         ]

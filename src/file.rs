@@ -64,7 +64,7 @@ impl Data {
 
     pub fn search(&mut self) -> bool {
         match &self.search_pattern_re_opt {
-            None => panic!("Expected a search pattern here"),
+            None => false,
 
             Some(search_pattern_re) => {
                 let content = &self.content;
