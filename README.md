@@ -104,6 +104,8 @@ Following features are implemented and usable in the current version:
 
 Following features might be added sooner or later:
 
+* Do not accept PATTERN and PATH with a leading `-`
+* Do not fail when some folders have insufficient permissions
 * By default, do not replace: invert interpretation fo `-n` (and use a different name)
 * Support for arguments without a _shorthand_ notation
 * Support for displaying a content with a single argument, preferably `-c`
