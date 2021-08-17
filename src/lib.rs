@@ -40,6 +40,8 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
         return Ok(());
     }
 
+    let stdout_is_tty = options.console_output_always.unwrap_or(atty::is(Stream::Stdout));
+
     match file_data.load(path) {
         Err(_) => if options.verbose_level >= 1 {
             println!("Warning: Skipping \"{}\", could not load file", path.display());
@@ -55,7 +57,9 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                         println!("{}", format!("{}", file_data.path.display()));
                     }
                 } else {
-                    println!("{}", format!("{}", file_data.path.display()).green().bold());
+                    if stdout_is_tty {
+                        println!("{}", format!("{}", file_data.path.display()).green().bold());
+                    }
                     let content = file_data.content.as_slice();
                     //Iterator that is meant to be options.output_before behind the
                     //one driving the for loop. `delay` indicates the actual delay.
@@ -71,10 +75,15 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                         if let Some(cnt) = output_count {
                             let delayed_line = delayed_line_iter.next().unwrap();
                             if cnt > 0 {
+                                if !stdout_is_tty {
+                                    print!("{}:", file_data.path.display());
+                                }
                                 delayed_line.print_colored(delayed_line.as_slice(content), &file_data.replace_opt);
                                 output_count = Some(cnt-1);
                             } else {
-                                println!("...");
+                                if stdout_is_tty {
+                                    println!("...");
+                                }
                                 output_count = None;
                             }
                         } else if delay < options.output_before {
@@ -83,7 +92,9 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                             let _ = delayed_line_iter.next();
                         }
                     }
-                    println!("");
+                    if stdout_is_tty {
+                        println!("");
+                    }
                 }
 
                 if file_data.replace_opt.is_some() {

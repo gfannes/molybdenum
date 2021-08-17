@@ -13,7 +13,7 @@ fn main() -> util::Result<()> {
         println!("{:?}", options);
     }
 
-    if let Some(b) = options.colored_output_always {
+    if let Some(b) = options.console_output_always {
         colored::control::set_override(b)
     }
 

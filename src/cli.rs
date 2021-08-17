@@ -34,7 +34,7 @@ pub struct Options {
     pub output_after: u64,
     pub output_before: u64,
     pub input_from_file_opt: std::option::Option<bool>,
-    pub colored_output_always: std::option::Option<bool>,
+    pub console_output_always: std::option::Option<bool>,
 }
 
 //Default values for Options
@@ -61,7 +61,7 @@ impl Default for Options {
             output_after: 0,
             output_before: 0,
             input_from_file_opt: None,
-            colored_output_always: None,
+            console_output_always: None,
         }
     }
 }
@@ -163,8 +163,8 @@ fn generate_option_vec() -> Vec<Option> {
             options.input_from_file_opt = Some(false);
             Ok(())
         })),
-        Option::new("-c", "--color-output", "Always produce colored output", Handler::Args0(|options|{
-            options.colored_output_always = Some(true);
+        Option::new("-c", "--console-output", "Always produce console output", Handler::Args0(|options|{
+            options.console_output_always = Some(true);
             Ok(())
         })),
         ]
