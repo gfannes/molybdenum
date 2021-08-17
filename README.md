@@ -130,6 +130,7 @@ Following features might be added sooner or later:
   * Performance tests and some reporting around this
 * Binary releases on [github](https://github.com/gfannes/molybdenum)
 * Improved color scheme for people using a light background theme
+* Add changelog for versions before v0.1.6.
 
 ## Performance
 
@@ -169,3 +170,10 @@ Scenario: search for word `test` in .cpp files in subfolder `core` where path co
 ```
 
 I don't know how I can accomplish this scenario with `ag` and `rg` in a single command without relying on `xargs` and `tr`.
+
+## Changelog
+
+### v0.1.6
+
+* When stdout is non-TTY, a more compact and useful output format is used
+* Added `.out` extension to the list of binary files
