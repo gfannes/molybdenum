@@ -138,7 +138,7 @@ impl Scanner<'_> {
 
 fn all_binary_extensions_() -> BTreeSet<OsString> {
     let mut set = BTreeSet::<OsString>::new();
-    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc", "zip", "gz", "gzip", "o"] {
+    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc", "zip", "gz", "gzip", "o", "out"] {
         set.insert(OsString::from(ext));
     }
     set
