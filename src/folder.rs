@@ -3,7 +3,7 @@ use crate::cli::{Options,OutputOnly};
 use std::path::Path;
 use std::ffi::OsString;
 use std::collections::BTreeSet;
-use regex::bytes::Regex;
+use regex::bytes::{Regex, RegexBuilder};
 use ignore::WalkBuilder;
 
 pub struct Scanner<'a> {
@@ -28,13 +28,13 @@ impl Scanner<'_> {
             binary_extensions: all_binary_extensions_(),
         };
         for s in options.file_include_pattern_vec.iter() {
-            match Regex::new(s) {
+            match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
                 Err(_) => fail!("\"{}\" is not a valid Regex", s),
                 Ok(re) => scanner.file_include_regex_vec.push(re),
             }
         }
         for s in options.file_exclude_pattern_vec.iter() {
-            match Regex::new(s) {
+            match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
                 Err(_) => fail!("\"{}\" is not a valid Regex", s),
                 Ok(re) => scanner.file_exclude_regex_vec.push(re),
             }
