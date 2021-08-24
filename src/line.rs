@@ -59,6 +59,17 @@ impl Line {
             my_print(replace);
         }
     }
+
+    pub fn print_colored_match(&self, content: &ContentSlice) {
+        //@todo: make configurable
+        // print!("{}:", format!("{}", self.nr).yellow());
+        for r in self.matches.iter() {
+            if let Ok(match_str) = from_utf8(&content[r.start..r.end]) {
+                print!("{}", match_str.bright_cyan().bold());
+            }
+        }
+        println!("");
+    }
     
     pub fn replace_with(&self, content: &ContentSlice, replace: &str, output: &mut Vec<u8>) {
         output.clear();
@@ -69,5 +80,12 @@ impl Line {
             offset = r.end;
         }
         output.extend_from_slice(&content[offset..]);
+    }
+    
+    pub fn only_matches(&self, content: &ContentSlice, output: &mut Vec<u8>) {
+        output.clear();
+        for r in self.matches.iter() {
+            output.extend_from_slice(&content[r.start..r.end]);
+        }
     }
 }

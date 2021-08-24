@@ -68,7 +68,7 @@ impl Scanner<'_> {
             let path = entry.into_path();
 
             let do_add_path = match self.options.output_only {
-                None => true
+                None | Some(OutputOnly::Match) => true
                     && file_type.is_file()
                     && self.extension_ok_(&path)
                     && self.name_ok_(&path),

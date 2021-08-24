@@ -133,18 +133,27 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
 
         let found_match = search_pattern_re_opt.as_ref().map_or(false, |re|line.search_for(re, &buffer));
 
-        if stdout_is_tty {
-            //When output is the console, we only output matches
-            if found_match {
-                line.print_colored(&buffer, &options.replace_opt);
-            }
-        } else {
-            //When output is redirected, we output every line, regardless if it maches or not
+        if options.replace_opt.is_some() && !stdout_is_tty {
+            //When we are _replacing_ with _redirected output_, we will keep _all_ the input lines,
+            //also those that do not match
             if found_match && options.replace_opt.is_some() {
-                line.replace_with(&buffer, options.replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+                if options.output_only == Some(cli::OutputOnly::Match) {
+                    line.only_matches(&buffer, &mut buffer_replaced);
+                } else {
+                    line.replace_with(&buffer, options.replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+                }
                 stdout_handle.write(&buffer_replaced)?;
             } else {
                 stdout_handle.write(&buffer)?;
+            }
+        } else {
+            //Else, we only output matching lines
+            if found_match {
+                if options.output_only == Some(cli::OutputOnly::Match) {
+                    line.print_colored_match(&buffer);
+                } else {
+                    line.print_colored(&buffer, &options.replace_opt);
+                }
             }
         }
 

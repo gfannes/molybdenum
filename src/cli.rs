@@ -9,6 +9,7 @@ use colored::Colorize;
 pub enum OutputOnly {
     Filenames,
     Folders,
+    Match,
 }
 //
 //Represents parsed CLI options
@@ -94,6 +95,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-L", "--folders-only", "Output only folders [false]", Handler::Args0(|options|{
             options.output_only = Some(OutputOnly::Folders);
+            Ok(())
+        })),
+        Option::new("-m", "--match-only", "Output only matches [false]", Handler::Args0(|options|{
+            options.output_only = Some(OutputOnly::Match);
             Ok(())
         })),
         Option::new("-0", "--null", "NULL-separated filename output [false]", Handler::Args0(|options|{
