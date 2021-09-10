@@ -29,6 +29,7 @@ pub struct Options {
     pub word_boundary: bool,
     pub case_sensitive: bool,
     pub extensions: Vec<OsString>,
+    pub extension_sets: Vec<OsString>,
     pub search_binary_files: bool,
     pub file_include_pattern_vec: Vec<String>,
     pub file_exclude_pattern_vec: Vec<String>,
@@ -56,6 +57,7 @@ impl Default for Options {
             word_boundary: false,
             case_sensitive: false,
             extensions: vec![],
+            extension_sets: vec![],
             search_binary_files: false,
             file_include_pattern_vec: vec![],
             file_exclude_pattern_vec: vec![],
@@ -138,6 +140,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-e", "--extension", "Add search EXTENSION (or)", Handler::Args1("EXTENSION", |options, extenion|{
             options.extensions.push(OsString::from(extenion));
+            Ok(())
+        })),
+        Option::new("-E", "--extension-set", "Add search EXTENSION_SET (or)", Handler::Args1("EXTENSION_SET", |options, extenion_set|{
+            options.extension_sets.push(OsString::from(extenion_set));
             Ok(())
         })),
         Option::new("-a", "--binary", "Search binary files as well [false]", Handler::Args0(|options|{
