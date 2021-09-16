@@ -24,6 +24,7 @@ pub struct Options {
     pub search_hidden_files: bool,
     pub search_ignored_files: bool,
     pub search_pattern_opt: std::option::Option<String>,
+    pub invert_pattern: bool,
     pub replace_opt: std::option::Option<String>,
     pub simulate_replace: bool,
     pub word_boundary: bool,
@@ -52,6 +53,7 @@ impl Default for Options {
             search_hidden_files: false,
             search_ignored_files: false,
             search_pattern_opt: None,
+            invert_pattern: false,
             replace_opt: None,
             simulate_replace: false,
             word_boundary: false,
@@ -120,6 +122,10 @@ fn generate_option_vec() -> Vec<Option> {
                 fail!("Search PATTERN is already set to \"{}\"", pattern);
             }
             options.search_pattern_opt = Some(pattern.to_string());
+            Ok(())
+        })),
+        Option::new("-v", "--invert", "Invert search pattern", Handler::Args0(|options|{
+            options.invert_pattern = true;
             Ok(())
         })),
         Option::new("-r", "--replace", "Replace search matches with STRING", Handler::Args1("STRING", |options, replace|{
@@ -315,6 +321,11 @@ fn test_options_parse() {
             args: vec!["-h"],
             parse_ok: true,
             options: Options{output_help: true, ..Options::default()},
+        },
+        Scn{
+            args: vec!["-v"],
+            parse_ok: true,
+            options: Options{invert_pattern: true, ..Options::default()},
         },
         Scn{
             args: vec!["-C", "ROOT"],

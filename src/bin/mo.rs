@@ -37,7 +37,7 @@ fn main() -> util::Result<()> {
         if let Some(search_pattern_str) = &options.search_pattern_opt {
             search_pattern_re_opt = Some(search::create_regex(search_pattern_str, options.word_boundary, options.case_sensitive)?);
         }
-        let mut file_data = file::Data::new(search_pattern_re_opt, &options.replace_opt);
+        let mut file_data = file::Data::new(search_pattern_re_opt, options.invert_pattern, &options.replace_opt);
 
         if options.roots.is_empty() {
             molybdenum::process_folder(".", &options, &mut file_data)?;

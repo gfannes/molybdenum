@@ -49,7 +49,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
 
         Ok(()) => {
             file_data.split_in_lines()?;
-            if file_data.search() {
+            if file_data.search() ^ options.invert_pattern {
                 if options.output_only == Some(cli::OutputOnly::Filenames) {
                     if options.null_separated_output {
                         print!("{}\0", format!("{}", file_data.path.display()));
@@ -131,7 +131,7 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
 
         let mut line = Line::new(line_nr, 0, buffer.len());
 
-        let found_match = search_pattern_re_opt.as_ref().map_or(false, |re|line.search_for(re, &buffer));
+        let found_match = search_pattern_re_opt.as_ref().map_or(false, |re|line.search_for(re, &buffer)) ^ options.invert_pattern;
 
         if options.replace_opt.is_some() && !stdout_is_tty {
             //When we are _replacing_ with _redirected output_, we will keep _all_ the input lines,

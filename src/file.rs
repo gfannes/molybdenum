@@ -8,6 +8,7 @@ use regex::bytes::Regex;
 
 pub struct Data {
     pub search_pattern_re_opt: Option<Regex>,
+    pub invert_pattern: bool,
     pub replace_opt: Option<String>,
     pub path: PathBuf,
     pub content: Content,
@@ -15,9 +16,10 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn new(search_pattern_re_opt: Option<Regex>, replace_opt: &Option<String>) -> Data {
+    pub fn new(search_pattern_re_opt: Option<Regex>, invert_pattern: bool, replace_opt: &Option<String>) -> Data {
         Data{
             search_pattern_re_opt,
+            invert_pattern,
             replace_opt: replace_opt.clone(), 
             path: PathBuf::new(),
             content: Content::new(),
@@ -104,7 +106,7 @@ impl Data {
 pub fn test_file() -> Result<()> {
     use crate::search;
 
-    let mut data = Data::new(search::create_regex("regex", false, false).ok(), &None);
+    let mut data = Data::new(search::create_regex("regex", false, false).ok(), false, &None);
 
     data.load(file!())?;
     println!("Read {} bytes", data.content.len());
