@@ -144,8 +144,8 @@ fn generate_option_vec() -> Vec<Option> {
             options.case_sensitive = true;
             Ok(())
         })),
-        Option::new("-e", "--extension", "Add search EXTENSION (or)", Handler::Args1("EXTENSION", |options, extenion|{
-            options.extensions.push(OsString::from(extenion));
+        Option::new("-e", "--extension", "Add search EXTENSION (or)", Handler::Args1("EXTENSION", |options, extension|{
+            options.extensions.push(OsString::from(extension));
             Ok(())
         })),
         Option::new("-E", "--extension-set", "Add search EXTENSION_SET (or)", Handler::Args1("EXTENSION_SET", |options, extenion_set|{
@@ -235,6 +235,24 @@ impl Options {
                     }
 
                 },
+            }
+        }
+
+        //Translate extension_sets into extensions
+        {
+            let extension_sets = self.extension_sets.clone();
+            for extension_set in extension_sets.iter() {
+                let mut add_extension = |extension|{
+                    self.extensions.push(OsString::from(extension))
+                };
+                if extension_set == &OsString::from("c") {
+                    add_extension("c");
+                    add_extension("h");
+                    add_extension("cpp");
+                    add_extension("hpp");
+                } else {
+                    fail!("Unknown extension set {}", extension_set.to_string_lossy())
+                }
             }
         }
 
