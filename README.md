@@ -177,7 +177,13 @@ I don't know how I can accomplish this scenario with `ag` and `rg` in a single c
 * When stdout is non-TTY, a more compact and useful output format is used
 * Added `.out` extension to the list of binary files
 
-### v0.1.7-beta
+### v0.1.7
 
 * Filename pattern matching with `-f` and `-F` is now case-sensitive only when `-s` is set
 * Added primitive method to only output the matches via `-m`. This should be replaced with proper Regex submatch support.
+
+### v0.1.8
+
+* Support for working with capture groups. When `-P %` is specified, the replacement string specified via `-r` will substitute capture groups for all occurences of `%` or `%[0-9]`.
+* Support for compact output.
+* Rework of colored output: when not specified, the output stream is checked. If this is a TTY, no color output will be produced.
