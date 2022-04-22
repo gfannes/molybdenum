@@ -13,7 +13,7 @@ fn main() -> util::Result<()> {
         println!("{:?}", options);
     }
 
-    if let Some(b) = options.console_output_always {
+    if let Some(b) = options.color_output {
         colored::control::set_override(b)
     }
 
@@ -33,11 +33,15 @@ fn main() -> util::Result<()> {
             println!("Taking input from file");
         }
 
-        let mut search_pattern_re_opt = None;
+        let mut search_opt = None;
         if let Some(search_pattern_str) = &options.search_pattern_opt {
-            search_pattern_re_opt = Some(search::create_regex(search_pattern_str, options.word_boundary, options.case_sensitive)?);
+            search_opt = Some(search::Search::new(search_pattern_str, options.word_boundary, options.case_sensitive)?);
         }
-        let mut file_data = file::Data::new(search_pattern_re_opt, options.invert_pattern, &options.replace_opt);
+        let mut replace_opt = None;
+        if let Some(replace) = &options.replace_opt {
+            replace_opt = Some(search::Replace::new(replace, &options.capture_group_prefix_opt));
+        }
+        let mut file_data = file::Data::new(search_opt, options.invert_pattern, replace_opt);
 
         if options.roots.is_empty() {
             molybdenum::process_folder(".", &options, &mut file_data)?;

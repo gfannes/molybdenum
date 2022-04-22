@@ -18,7 +18,7 @@ where P: AsRef<std::path::Path>
 {
     let paths = folder::Scanner::new(root, &options)?.scan()?;
 
-    if file_data.search_pattern_re_opt.is_some() {
+    if file_data.search_opt.is_some() {
         for path in &paths {
             process_file(path, options, file_data)?;
         }
@@ -40,7 +40,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
         return Ok(());
     }
 
-    let stdout_is_tty = options.console_output_always.unwrap_or(atty::is(Stream::Stdout));
+    let console_output = options.console_output.unwrap_or(atty::is(Stream::Stdout));
 
     match file_data.load(path) {
         Err(_) => if options.verbose_level >= 1 {
@@ -49,7 +49,8 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
 
         Ok(()) => {
             file_data.split_in_lines()?;
-            if file_data.search() ^ options.invert_pattern {
+            if file_data.search_for_matches() ^ options.invert_pattern {
+                let search = file_data.search_opt.as_ref().unwrap();
                 if options.output_only == Some(cli::OutputOnly::Filenames) {
                     if options.null_separated_output {
                         print!("{}\0", format!("{}", file_data.path.display()));
@@ -57,7 +58,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                         println!("{}", format!("{}", file_data.path.display()));
                     }
                 } else {
-                    if stdout_is_tty {
+                    if console_output {
                         println!("{}", format!("{}", file_data.path.display()).green().bold());
                     }
                     let content = file_data.content.as_slice();
@@ -75,13 +76,13 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                         if let Some(cnt) = output_count {
                             let delayed_line = delayed_line_iter.next().unwrap();
                             if cnt > 0 {
-                                if !stdout_is_tty {
+                                if !console_output {
                                     print!("{}:", file_data.path.display());
                                 }
-                                delayed_line.print_colored(delayed_line.as_slice(content), &file_data.replace_opt);
+                                delayed_line.print_colored2(delayed_line.as_slice(content), search, &file_data.replace_opt);
                                 output_count = Some(cnt-1);
                             } else {
-                                if stdout_is_tty {
+                                if console_output {
                                     println!("...");
                                 }
                                 output_count = None;
@@ -92,7 +93,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                             let _ = delayed_line_iter.next();
                         }
                     }
-                    if stdout_is_tty {
+                    if console_output {
                         println!("");
                     }
                 }
@@ -110,54 +111,58 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
 }
 
 pub fn process_stdin(options: &cli::Options) -> Result<()> {
-    let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
-    let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
-    let search_pattern_re_opt = match &options.search_pattern_opt {
-        None => None,
-        Some(str) => Some(search::create_regex(str, options.word_boundary, options.case_sensitive)?),
-    };
-    let stdout_is_tty = atty::is(Stream::Stdout);
+    match &options.search_pattern_opt {
+        None => Ok(()),
+        Some(pattern) => {
+            let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
+            let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
+            let search = search::Search::new(&pattern, options.word_boundary, options.case_sensitive).unwrap();
 
-    let mut buffer: Vec<u8> = vec![];
-    let mut buffer_replaced: Vec<u8> = vec![];
-    let mut line_nr = 0;
+            let replace_opt = options.replace_opt.as_ref().map(|s|search::Replace::new(s, &options.capture_group_prefix_opt));
+            let stdout_is_tty = atty::is(Stream::Stdout);
 
-    while let Ok(size) = stdin_handle.read_until(0x0a_u8, &mut buffer) {
-        if size == 0 {
-            break;
-        }
+            let mut buffer: Vec<u8> = vec![];
+            let mut buffer_replaced: Vec<u8> = vec![];
+            let mut line_nr = 0;
 
-        line_nr += 1;
-
-        let mut line = Line::new(line_nr, 0, buffer.len());
-
-        let found_match = search_pattern_re_opt.as_ref().map_or(false, |re|line.search_for(re, &buffer)) ^ options.invert_pattern;
-
-        if options.replace_opt.is_some() && !stdout_is_tty {
-            //When we are _replacing_ with _redirected output_, we will keep _all_ the input lines,
-            //also those that do not match
-            if found_match && options.replace_opt.is_some() {
-                if options.output_only == Some(cli::OutputOnly::Match) {
-                    line.only_matches(&buffer, &mut buffer_replaced);
-                } else {
-                    line.replace_with(&buffer, options.replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+            while let Ok(size) = stdin_handle.read_until(0x0a_u8, &mut buffer) {
+                if size == 0 {
+                    break;
                 }
-                stdout_handle.write(&buffer_replaced)?;
-            } else {
-                stdout_handle.write(&buffer)?;
-            }
-        } else {
-            //Else, we only output matching lines
-            if found_match {
-                if options.output_only == Some(cli::OutputOnly::Match) {
-                    line.print_colored_match(&buffer);
-                } else {
-                    line.print_colored(&buffer, &options.replace_opt);
-                }
-            }
-        }
 
-        buffer.clear();
+                line_nr += 1;
+
+                let mut line = Line::new(line_nr, 0, buffer.len());
+
+                let found_match = line.search_for2(&search, &buffer) ^ options.invert_pattern;
+
+                if replace_opt.is_some() && !stdout_is_tty {
+                    //When we are _replacing_ with _redirected output_, we will keep _all_ the input lines,
+                    //also those that do not match
+                    if found_match && replace_opt.is_some() {
+                        if options.output_only == Some(cli::OutputOnly::Match) {
+                            line.only_matches(&buffer, &mut buffer_replaced);
+                        } else {
+                            line.replace_with2(&buffer, &search, replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+                        }
+                        stdout_handle.write(&buffer_replaced)?;
+                    } else {
+                        stdout_handle.write(&buffer)?;
+                    }
+                } else {
+                    //Else, we only output matching lines
+                    if found_match {
+                        if options.output_only == Some(cli::OutputOnly::Match) {
+                            line.print_colored_match(&buffer);
+                        } else {
+                            line.print_colored2(&buffer, &search, &replace_opt);
+                        }
+                    }
+                }
+
+                buffer.clear();
+            }
+            Ok(())
+        },
     }
-    Ok(())
 }

@@ -24,6 +24,7 @@ pub struct Options {
     pub search_hidden_files: bool,
     pub search_ignored_files: bool,
     pub search_pattern_opt: std::option::Option<String>,
+    pub capture_group_prefix_opt: std::option::Option<String>,
     pub invert_pattern: bool,
     pub replace_opt: std::option::Option<String>,
     pub simulate_replace: bool,
@@ -37,7 +38,8 @@ pub struct Options {
     pub output_after: u64,
     pub output_before: u64,
     pub input_from_file_opt: std::option::Option<bool>,
-    pub console_output_always: std::option::Option<bool>,
+    pub console_output: std::option::Option<bool>,
+    pub color_output: std::option::Option<bool>,
 }
 
 //Default values for Options
@@ -53,6 +55,7 @@ impl Default for Options {
             search_hidden_files: false,
             search_ignored_files: false,
             search_pattern_opt: None,
+            capture_group_prefix_opt: None,
             invert_pattern: false,
             replace_opt: None,
             simulate_replace: false,
@@ -66,8 +69,16 @@ impl Default for Options {
             output_after: 0,
             output_before: 0,
             input_from_file_opt: None,
-            console_output_always: None,
+            console_output: None,
+            color_output: None,
         }
+    }
+}
+
+fn parse_boolean(s: &str) -> bool {
+    match s {
+        "true" | "1" | "y" | "Y" | "yes" | "Yes" | "YES" => true,
+        _ => false,
     }
 }
 
@@ -122,6 +133,10 @@ fn generate_option_vec() -> Vec<Option> {
                 fail!("Search PATTERN is already set to \"{}\"", pattern);
             }
             options.search_pattern_opt = Some(pattern.to_string());
+            Ok(())
+        })),
+        Option::new("-P", "--capture-prefix", "Substitute capture groups with given prefix. If no capture group index is provided, 1 will be used.", Handler::Args1("PREFIX", |options, prefix|{
+            options.capture_group_prefix_opt = Some(prefix.to_string());
             Ok(())
         })),
         Option::new("-v", "--invert", "Invert search pattern", Handler::Args0(|options|{
@@ -180,8 +195,12 @@ fn generate_option_vec() -> Vec<Option> {
             options.input_from_file_opt = Some(false);
             Ok(())
         })),
-        Option::new("-c", "--console-output", "Always produce console output", Handler::Args0(|options|{
-            options.console_output_always = Some(true);
+        Option::new("-c", "--console-output", "Produce console or compact output [false if output stream is TTY]", Handler::Args1("BOOLEAN", |options, boolean|{
+            options.console_output = Some(parse_boolean(boolean));
+            Ok(())
+        })),
+        Option::new("-k", "--color-output", "Produce colored output [false if output stream is TTY]", Handler::Args1("BOOLEAN", |options, boolean|{
+            options.color_output = Some(parse_boolean(boolean));
             Ok(())
         })),
         ]

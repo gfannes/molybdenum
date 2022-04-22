@@ -1,26 +1,25 @@
 use crate::util::Result;
 use crate::line::{Line, Content};
+use crate::search::{Search, Replace};
 use std::io::Read;
 use std::io::Write;
 use std::path::PathBuf;
-use regex::bytes::Regex;
-
 
 pub struct Data {
-    pub search_pattern_re_opt: Option<Regex>,
+    pub search_opt: Option<Search>,
     pub invert_pattern: bool,
-    pub replace_opt: Option<String>,
+    pub replace_opt: Option<Replace>,
     pub path: PathBuf,
     pub content: Content,
     pub lines: Vec<Line>,
 }
 
 impl Data {
-    pub fn new(search_pattern_re_opt: Option<Regex>, invert_pattern: bool, replace_opt: &Option<String>) -> Data {
+    pub fn new(search_opt: Option<Search>, invert_pattern: bool, replace_opt: Option<Replace>) -> Data {
         Data{
-            search_pattern_re_opt,
+            search_opt,
             invert_pattern,
-            replace_opt: replace_opt.clone(), 
+            replace_opt: replace_opt, 
             path: PathBuf::new(),
             content: Content::new(),
             lines: vec![],
@@ -64,15 +63,15 @@ impl Data {
         Ok(())
     }
 
-    pub fn search(&mut self) -> bool {
-        match &self.search_pattern_re_opt {
+    pub fn search_for_matches(&mut self) -> bool {
+        match &self.search_opt {
             None => false,
 
-            Some(search_pattern_re) => {
+            Some(search) => {
                 let content = &self.content;
                 let mut found_match = false;
                 for line in self.lines.iter_mut() {
-                    found_match = line.search_for(search_pattern_re, content) || found_match;
+                    found_match = line.search_for(&search.regex, content) || found_match;
                 }
                 found_match
             },
@@ -86,12 +85,22 @@ impl Data {
             Some(replace) => {
                 let mut f = std::fs::File::create(&self.path)?;
                 let content_slice = &self.content;
+                let search = self.search_opt.as_ref().unwrap();
                 for line in self.lines.iter() {
                     let line_slice = line.as_slice(content_slice);
                     let mut offset = 0;
                     for r in line.matches.iter() {
                         f.write(&line_slice[offset..r.start])?;
-                        f.write(replace.as_bytes())?;
+                        {
+                            let match_bytes = &line_slice[r.start..r.end];
+                            let caps = search.regex.captures(match_bytes).unwrap();
+                            for (capture_ix, part) in &replace.parts {
+                                if *capture_ix >= 0 {
+                                    f.write(caps.get(*capture_ix as usize).unwrap().as_bytes())?;
+                                }
+                                f.write(part.as_bytes())?;
+                            }
+                        }
                         offset = r.end;
                     }
                     f.write(&line_slice[offset..])?;
@@ -106,7 +115,7 @@ impl Data {
 pub fn test_file() -> Result<()> {
     use crate::search;
 
-    let mut data = Data::new(search::create_regex("regex", false, false).ok(), false, &None);
+    let mut data = Data::new(search::Search::new("regex", false, false).ok(), false, None);
 
     data.load(file!())?;
     println!("Read {} bytes", data.content.len());
@@ -114,7 +123,7 @@ pub fn test_file() -> Result<()> {
     data.split_in_lines()?;
     println!("Found {} lines", data.lines.len());
 
-    assert!(data.search());
+    assert!(data.search_for_matches());
 
     for line in &data.lines {
         if !line.matches.is_empty() {
