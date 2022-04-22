@@ -121,7 +121,6 @@ Following features might be added sooner or later:
 * Support for inverting the matches per line
 * Use a better name, I just picked something that was still available.
   * Nobody can remember `molybdenum`, and it is very hard to type. `mo` is better, but difficult to search on the internet.
-* Support for using regex capture groups during replacement
 * Better detection of binary files
 * Rollback when writing replacement file fails
 * Improved testing
