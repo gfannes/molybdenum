@@ -71,7 +71,7 @@ impl Data {
                 let content = &self.content;
                 let mut found_match = false;
                 for line in self.lines.iter_mut() {
-                    found_match = line.search_for(&search.regex, content) || found_match;
+                    found_match = line.search_for(&search, content) || found_match;
                 }
                 found_match
             },

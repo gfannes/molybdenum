@@ -79,7 +79,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                                 if !console_output {
                                     print!("{}:", file_data.path.display());
                                 }
-                                delayed_line.print_colored2(delayed_line.as_slice(content), search, &file_data.replace_opt);
+                                delayed_line.print_colored(delayed_line.as_slice(content), search, &file_data.replace_opt);
                                 output_count = Some(cnt-1);
                             } else {
                                 if console_output {
@@ -134,7 +134,7 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
 
                 let mut line = Line::new(line_nr, 0, buffer.len());
 
-                let found_match = line.search_for2(&search, &buffer) ^ options.invert_pattern;
+                let found_match = line.search_for(&search, &buffer) ^ options.invert_pattern;
 
                 if replace_opt.is_some() && !stdout_is_tty {
                     //When we are _replacing_ with _redirected output_, we will keep _all_ the input lines,
@@ -143,7 +143,7 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
                         if options.output_only == Some(cli::OutputOnly::Match) {
                             line.only_matches(&buffer, &mut buffer_replaced);
                         } else {
-                            line.replace_with2(&buffer, &search, replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+                            line.replace_with(&buffer, &search, replace_opt.as_ref().unwrap(), &mut buffer_replaced);
                         }
                         stdout_handle.write(&buffer_replaced)?;
                     } else {
@@ -155,7 +155,7 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
                         if options.output_only == Some(cli::OutputOnly::Match) {
                             line.print_colored_match(&buffer);
                         } else {
-                            line.print_colored2(&buffer, &search, &replace_opt);
+                            line.print_colored(&buffer, &search, &replace_opt);
                         }
                     }
                 }
