@@ -13,7 +13,7 @@ task :install => :test do
     sh "cargo install --path ./ --force"
 end
 
-desc "Create and publish the release package"
+desc "Create and publish the release package. Tag the source code manually."
 task :release do
     sh "cargo package"
     sh "cargo publish"
