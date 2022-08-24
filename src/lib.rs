@@ -44,7 +44,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
 
     match file_data.load(path) {
         Err(_) => if options.verbose_level >= 1 {
-            println!("Warning: Skipping \"{}\", could not load file", path.display());
+            println!("Warning: Skipping '{}', could not load file", path.display());
         },
 
         Ok(()) => {

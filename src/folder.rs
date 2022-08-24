@@ -29,13 +29,13 @@ impl Scanner<'_> {
         };
         for s in options.file_include_pattern_vec.iter() {
             match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
-                Err(_) => fail!("\"{}\" is not a valid Regex", s),
+                Err(_) => fail!("'{}' is not a valid Regex", s),
                 Ok(re) => scanner.file_include_regex_vec.push(re),
             }
         }
         for s in options.file_exclude_pattern_vec.iter() {
             match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
-                Err(_) => fail!("\"{}\" is not a valid Regex", s),
+                Err(_) => fail!("'{}' is not a valid Regex", s),
                 Ok(re) => scanner.file_exclude_regex_vec.push(re),
             }
         }
@@ -62,7 +62,7 @@ impl Scanner<'_> {
         for entry in walk {
             let entry = entry?;
             let file_type = match entry.file_type() {
-                None => fail!("Could not get file type for \"{:?}\"", entry),
+                None => fail!("Could not get file type for '{:?}'", entry),
                 Some(ft) => ft,
             };
             let path = entry.into_path();
@@ -121,7 +121,7 @@ impl Scanner<'_> {
     fn name_ok_(&self, path: &std::path::Path) -> bool {
         //Filter against include/exclude patterns
         match path.to_str() {
-            None => println!("Warning: path \"{}\" is not UTF-8 and cannot be matched", path.display()),
+            None => println!("Warning: path '{}' is not UTF-8 and cannot be matched", path.display()),
 
             Some(path_str) => {
                 if !self.file_include_regex_vec.iter().all(|re|{re.is_match(path_str.as_bytes())}) {

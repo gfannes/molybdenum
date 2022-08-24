@@ -187,3 +187,7 @@ I don't know how I can accomplish this scenario with `ag` and `rg` in a single c
 * Support for working with capture groups. When `-P %` is specified, the replacement string specified via `-r` will substitute capture groups for all occurences of `%` or `%[0-9]`.
 * Support for compact output.
 * Rework of colored output: when not specified, the output stream is checked. If this is a TTY, no color output will be produced.
+
+### v0.1.9
+
+* When the search pattern is specified multiple time, the last one is actually used. This allows for a better integration with scripting where a default pattern is specified and might be updated later.

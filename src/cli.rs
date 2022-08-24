@@ -95,7 +95,7 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-V", "--verbose", "Use verbosity LEVEL [0]", Handler::Args1("LEVEL", |options, level|{
             match level.parse::<i32>() {
-                Err(_) => fail!("Could not convert \"{}\" into a verbosity level", level),
+                Err(_) => fail!("Could not convert '{}' into a verbosity level", level),
                 Ok(v) => options.verbose_level = v,
             }
             Ok(())
@@ -129,10 +129,7 @@ fn generate_option_vec() -> Vec<Option> {
             Ok(())
         })),
         Option::new("-p", "--pattern", "Use search regex PATTERN", Handler::Args1("PATTERN", |options, pattern|{
-            if let Some(pattern) = &options.search_pattern_opt {
-                fail!("Search PATTERN is already set to \"{}\"", pattern);
-            }
-            options.search_pattern_opt = Some(pattern.to_string());
+            options.set_search_pattern(pattern);
             Ok(())
         })),
         Option::new("-P", "--capture-prefix", "Substitute capture groups with given prefix. If no capture group index is provided, 1 will be used.", Handler::Args1("PREFIX", |options, prefix|{
@@ -233,13 +230,7 @@ impl Options {
 
             //Find option that matches with arg0
             match options.iter().find(|option|{option.suit(&arg0)}) {
-                None => {
-                    if self.search_pattern_opt.is_none() {
-                        self.search_pattern_opt = Some(arg0);
-                    } else { 
-                        self.roots.push(arg0.to_string());
-                    }
-                },
+                None => self.set_search_pattern(&arg0),
 
                 //Call the handler, taking care of its amount of arguments
                 Some(option) => {
@@ -278,11 +269,18 @@ impl Options {
         Ok(())
     }
 
+    pub fn set_search_pattern(&mut self, pattern: &str ) {
+        if let Some(old_pattern) = &self.search_pattern_opt {
+            println!("Warning: Search PATTERN is already set to '{}', setting it now to '{}'.", old_pattern, pattern);
+        }
+        self.search_pattern_opt = Some(pattern.to_string());
+    }
+
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo (--OPTION)* (PATTERN)? (--OPTION|PATH)*".green()));
-        s.push_str("Dashed options, search PATTERN and PATHs can be mixed, PATTERN should come before PATHs\n");
+        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo --OPTION* PATTERN? --OPTION*".green()));
+        s.push_str("Dashed options and search PATTERN can be mixed\n");
 
         s.push_str(&format!("{}:\n", "Options".yellow()));
         let option_vec = generate_option_vec();
@@ -375,11 +373,6 @@ fn test_options_parse() {
             options: Options{roots: vec![String::from("FOLDER1"), String::from("FOLDER2")], ..Options::default()},
         },
         Scn{
-            args: vec!["PATTERN", "FOLDER1", "FOLDER2"],
-            parse_ok: true,
-            options: Options{search_pattern_opt: Some(String::from("PATTERN")), roots: vec![String::from("FOLDER1"), String::from("FOLDER2")], ..Options::default()},
-        },
-        Scn{
             args: vec!["-V", "3"],
             parse_ok: true,
             options: Options{verbose_level: 3, ..Options::default()},
@@ -388,6 +381,21 @@ fn test_options_parse() {
             args: vec!["PATTERN"],
             parse_ok: true,
             options: Options{search_pattern_opt: Some("PATTERN".to_string()),..Options::default()},
+        },
+        Scn{
+            args: vec!["PATTERN1", "PATTERN2"],
+            parse_ok: true,
+            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
+        },
+        Scn{
+            args: vec!["PATTERN1", "-p", "PATTERN2"],
+            parse_ok: true,
+            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
+        },
+        Scn{
+            args: vec!["-p", "PATTERN1", "-p", "PATTERN2"],
+            parse_ok: true,
+            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
         },
         Scn{
             args: vec!["PATTERN", "-h"],

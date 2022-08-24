@@ -8,7 +8,7 @@ pub fn create_regex(pattern: &str, word_boundary: bool, case_sensitive: bool) ->
     }
 
     let re = match RegexBuilder::new(&pattern).case_insensitive(!case_sensitive).build() {
-        Err(_) => fail!("Pattern \"{}\" is not a valid regex", pattern),
+        Err(_) => fail!("Pattern '{}' is not a valid regex", pattern),
         Ok(re) => re,
     };
 
@@ -26,7 +26,7 @@ impl Search {
         }
 
         let regex = match RegexBuilder::new(&pattern).case_insensitive(!case_sensitive).build() {
-            Err(_) => fail!("Pattern \"{}\" is not a valid regex", pattern),
+            Err(_) => fail!("Pattern '{}' is not a valid regex", pattern),
             Ok(regex) => regex,
         };
 
