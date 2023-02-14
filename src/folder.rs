@@ -1,10 +1,10 @@
-use crate::util::{Result,MyError};
-use crate::cli::{Options,OutputOnly};
-use std::path::Path;
-use std::ffi::OsString;
-use std::collections::BTreeSet;
-use regex::bytes::{Regex, RegexBuilder};
+use crate::cli::{Options, OutputOnly};
+use crate::util::{MyError, Result};
 use ignore::WalkBuilder;
+use regex::bytes::{Regex, RegexBuilder};
+use std::collections::BTreeSet;
+use std::ffi::OsString;
+use std::path::Path;
 
 pub struct Scanner<'a> {
     root: std::path::PathBuf,
@@ -18,9 +18,10 @@ pub type Paths = Vec<std::path::PathBuf>;
 
 impl Scanner<'_> {
     pub fn new<'a, P>(root: P, options: &'a Options) -> Result<Scanner<'a>>
-        where P: AsRef<std::path::Path>
+    where
+        P: AsRef<std::path::Path>,
     {
-        let mut scanner = Scanner{
+        let mut scanner = Scanner {
             root: std::path::PathBuf::from(root.as_ref()),
             options,
             file_include_regex_vec: vec![],
@@ -28,13 +29,19 @@ impl Scanner<'_> {
             binary_extensions: all_binary_extensions_(),
         };
         for s in options.file_include_pattern_vec.iter() {
-            match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
+            match RegexBuilder::new(s)
+                .case_insensitive(!options.case_sensitive)
+                .build()
+            {
                 Err(_) => fail!("'{}' is not a valid Regex", s),
                 Ok(re) => scanner.file_include_regex_vec.push(re),
             }
         }
         for s in options.file_exclude_pattern_vec.iter() {
-            match RegexBuilder::new(s).case_insensitive(!options.case_sensitive).build() {
+            match RegexBuilder::new(s)
+                .case_insensitive(!options.case_sensitive)
+                .build()
+            {
                 Err(_) => fail!("'{}' is not a valid Regex", s),
                 Ok(re) => scanner.file_exclude_regex_vec.push(re),
             }
@@ -49,7 +56,8 @@ impl Scanner<'_> {
     }
 
     fn walk_<P>(&self, parent: P, paths: &mut Paths) -> Result<()>
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         let walk = WalkBuilder::new(parent)
             .hidden(!self.options.search_hidden_files)
@@ -68,29 +76,19 @@ impl Scanner<'_> {
             let path = entry.into_path();
 
             let do_add_path = match self.options.output_only {
-                None | Some(OutputOnly::Match) => true
-                    && file_type.is_file()
-                    && self.extension_ok_(&path)
-                    && self.name_ok_(&path),
+                None | Some(OutputOnly::Match) => {
+                    true && file_type.is_file() && self.extension_ok_(&path) && self.name_ok_(&path)
+                }
 
-                Some(OutputOnly::Filenames) => true
-                    && file_type.is_file()
-                    && self.extension_ok_(&path)
-                    && self.name_ok_(&path),
+                Some(OutputOnly::Filenames) => {
+                    true && file_type.is_file() && self.extension_ok_(&path) && self.name_ok_(&path)
+                }
 
-                Some(OutputOnly::Folders) => true
-                    && file_type.is_dir()
-                    && self.name_ok_(&path),
+                Some(OutputOnly::Folders) => true && file_type.is_dir() && self.name_ok_(&path),
             };
 
             if do_add_path {
-                if self.options.use_relative_paths {
-                    //strip_prefix() is used to make the paths relative from the specified root
-                    //folder
-                    paths.push(path.strip_prefix(&self.root)?.to_path_buf());
-                } else {
-                    paths.push(path.to_path_buf());
-                }
+                paths.push(path.to_path_buf());
             }
         }
         Ok(())
@@ -107,7 +105,9 @@ impl Scanner<'_> {
             if !self.options.extensions.is_empty() {
                 let mut extension_dot = OsString::from(".");
                 extension_dot.push(extension);
-                if !self.options.extensions.iter().any(|allowed_extension| allowed_extension == extension || allowed_extension == extension_dot.as_os_str()) {
+                if !self.options.extensions.iter().any(|allowed_extension| {
+                    allowed_extension == extension || allowed_extension == extension_dot.as_os_str()
+                }) {
                     return false;
                 }
             }
@@ -121,16 +121,27 @@ impl Scanner<'_> {
     fn name_ok_(&self, path: &std::path::Path) -> bool {
         //Filter against include/exclude patterns
         match path.to_str() {
-            None => println!("Warning: path '{}' is not UTF-8 and cannot be matched", path.display()),
+            None => println!(
+                "Warning: path '{}' is not UTF-8 and cannot be matched",
+                path.display()
+            ),
 
             Some(path_str) => {
-                if !self.file_include_regex_vec.iter().all(|re|{re.is_match(path_str.as_bytes())}) {
+                if !self
+                    .file_include_regex_vec
+                    .iter()
+                    .all(|re| re.is_match(path_str.as_bytes()))
+                {
                     return false;
                 }
-                if self.file_exclude_regex_vec.iter().any(|re|{re.is_match(path_str.as_bytes())}) {
+                if self
+                    .file_exclude_regex_vec
+                    .iter()
+                    .any(|re| re.is_match(path_str.as_bytes()))
+                {
                     return false;
                 }
-            },
+            }
         }
         true
     }
@@ -138,7 +149,10 @@ impl Scanner<'_> {
 
 fn all_binary_extensions_() -> BTreeSet<OsString> {
     let mut set = BTreeSet::<OsString>::new();
-    for ext in &["wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc", "zip", "gz", "gzip", "o", "out"] {
+    for ext in &[
+        "wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc",
+        "zip", "gz", "gzip", "o", "out",
+    ] {
         set.insert(OsString::from(ext));
     }
     set

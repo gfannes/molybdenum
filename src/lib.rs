@@ -1,20 +1,22 @@
-#[macro_use]pub mod util;
+#[macro_use]
+pub mod util;
 pub mod cli;
-pub mod search;
 pub mod file;
-mod line;
 mod folder;
+mod line;
+pub mod search;
 extern crate colored;
 
-use crate::util::Result;
 use crate::line::Line;
+use crate::util::Result;
+use atty::Stream;
+use colored::Colorize;
 use std::io::BufRead;
 use std::io::Write;
-use colored::Colorize;
-use atty::Stream;
 
 pub fn process_folder<P>(root: P, options: &cli::Options, file_data: &mut file::Data) -> Result<()>
-where P: AsRef<std::path::Path>
+where
+    P: AsRef<std::path::Path>,
 {
     let paths = folder::Scanner::new(root, &options)?.scan()?;
 
@@ -23,7 +25,10 @@ where P: AsRef<std::path::Path>
             process_file(path, options, file_data)?;
         }
     } else {
-        for path in &paths {
+        for mut path in paths {
+            if path.starts_with(".") {
+                path = path.strip_prefix(".")?.to_path_buf();
+            }
             if options.null_separated_output {
                 print!("{}\0", format!("{}", path.display()));
             } else {
@@ -35,7 +40,11 @@ where P: AsRef<std::path::Path>
     Ok(())
 }
 
-pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data: &mut file::Data) -> Result<()> {
+pub fn process_file(
+    path: &std::path::PathBuf,
+    options: &cli::Options,
+    file_data: &mut file::Data,
+) -> Result<()> {
     if options.output_only == Some(cli::OutputOnly::Folders) {
         return Ok(());
     }
@@ -43,13 +52,22 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
     let console_output = options.console_output.unwrap_or(atty::is(Stream::Stdout));
 
     match file_data.load(path) {
-        Err(_) => if options.verbose_level >= 1 {
-            println!("Warning: Skipping '{}', could not load file", path.display());
-        },
+        Err(_) => {
+            if options.verbose_level >= 1 {
+                println!(
+                    "Warning: Skipping '{}', could not load file",
+                    path.display()
+                );
+            }
+        }
 
         Ok(()) => {
             file_data.split_in_lines()?;
             if file_data.search_for_matches() ^ options.invert_pattern {
+                if file_data.path.starts_with(".") {
+                    file_data.path = file_data.path.strip_prefix(".")?.to_path_buf();
+                }
+
                 let search = file_data.search_opt.as_ref().unwrap();
                 if options.output_only == Some(cli::OutputOnly::Filenames) {
                     if options.null_separated_output {
@@ -70,7 +88,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                     let mut output_count = None;
                     for line in file_data.lines.iter() {
                         if !line.matches.is_empty() {
-                            output_count = Some(delay+options.output_after+1);
+                            output_count = Some(delay + options.output_after + 1);
                         }
 
                         if let Some(cnt) = output_count {
@@ -79,8 +97,12 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                                 if !console_output {
                                     print!("{}:", file_data.path.display());
                                 }
-                                delayed_line.print_colored(delayed_line.as_slice(content), search, &file_data.replace_opt);
-                                output_count = Some(cnt-1);
+                                delayed_line.print_colored(
+                                    delayed_line.as_slice(content),
+                                    search,
+                                    &file_data.replace_opt,
+                                );
+                                output_count = Some(cnt - 1);
                             } else {
                                 if console_output {
                                     println!("...");
@@ -104,7 +126,7 @@ pub fn process_file(path: &std::path::PathBuf, options: &cli::Options, file_data
                     }
                 }
             }
-        },
+        }
     }
 
     Ok(())
@@ -116,9 +138,14 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
         Some(pattern) => {
             let (stdin, stdout) = (std::io::stdin(), std::io::stdout());
             let (mut stdin_handle, mut stdout_handle) = (stdin.lock(), stdout.lock());
-            let search = search::Search::new(&pattern, options.word_boundary, options.case_sensitive).unwrap();
+            let search =
+                search::Search::new(&pattern, options.word_boundary, options.case_sensitive)
+                    .unwrap();
 
-            let replace_opt = options.replace_opt.as_ref().map(|s|search::Replace::new(s, &options.capture_group_prefix_opt));
+            let replace_opt = options
+                .replace_opt
+                .as_ref()
+                .map(|s| search::Replace::new(s, &options.capture_group_prefix_opt));
             let stdout_is_tty = atty::is(Stream::Stdout);
 
             let mut buffer: Vec<u8> = vec![];
@@ -143,7 +170,12 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
                         if options.output_only == Some(cli::OutputOnly::Match) {
                             line.only_matches(&buffer, &mut buffer_replaced);
                         } else {
-                            line.replace_with(&buffer, &search, replace_opt.as_ref().unwrap(), &mut buffer_replaced);
+                            line.replace_with(
+                                &buffer,
+                                &search,
+                                replace_opt.as_ref().unwrap(),
+                                &mut buffer_replaced,
+                            );
                         }
                         stdout_handle.write(&buffer_replaced)?;
                     } else {
@@ -163,6 +195,6 @@ pub fn process_stdin(options: &cli::Options) -> Result<()> {
                 buffer.clear();
             }
             Ok(())
-        },
+        }
     }
 }

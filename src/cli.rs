@@ -1,11 +1,11 @@
-use crate::util::{Result,MyError};
+use crate::util::{MyError, Result};
+use colored::Colorize;
 use std::collections::VecDeque;
 use std::ffi::OsString;
-use colored::Colorize;
 
 //<Specific part of CLI handling>
 //
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum OutputOnly {
     Filenames,
     Folders,
@@ -13,12 +13,11 @@ pub enum OutputOnly {
 }
 //
 //Represents parsed CLI options
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Options {
     pub output_help: bool,
     pub roots: Vec<String>,
     pub verbose_level: i32,
-    pub use_relative_paths: bool,
     pub output_only: std::option::Option<OutputOnly>,
     pub null_separated_output: bool,
     pub search_hidden_files: bool,
@@ -45,11 +44,10 @@ pub struct Options {
 //Default values for Options
 impl Default for Options {
     fn default() -> Options {
-        Options{
+        Options {
             output_help: false,
             roots: vec![],
             verbose_level: 0,
-            use_relative_paths: false,
             output_only: None,
             null_separated_output: false,
             search_hidden_files: false,
@@ -98,10 +96,6 @@ fn generate_option_vec() -> Vec<Option> {
                 Err(_) => fail!("Could not convert '{}' into a verbosity level", level),
                 Ok(v) => options.verbose_level = v,
             }
-            Ok(())
-        })),
-        Option::new("-R", "--relative", "Use paths relative to the respective root folder [false]", Handler::Args0(|options|{
-            options.use_relative_paths = true;
             Ok(())
         })),
         Option::new("-l", "--filenames-only", "Output only filenames [false]", Handler::Args0(|options|{
@@ -211,11 +205,11 @@ fn generate_option_vec() -> Vec<Option> {
 //For now, this is not done because this project is still a "learning project".
 //
 //Represents raw CLI arguments as provided by the user
-        pub type Args = VecDeque<String>;
+pub type Args = VecDeque<String>;
 
-        pub fn args() -> Args {
-            std::env::args().skip(1).collect()
-        }
+pub fn args() -> Args {
+    std::env::args().skip(1).collect()
+}
 
 impl Options {
     pub fn new() -> Options {
@@ -227,23 +221,23 @@ impl Options {
 
         //Process all CLI arguments
         while let Some(arg0) = args.pop_front() {
-
             //Find option that matches with arg0
-            match options.iter().find(|option|{option.suit(&arg0)}) {
+            match options.iter().find(|option| option.suit(&arg0)) {
                 None => self.set_search_pattern(&arg0),
 
                 //Call the handler, taking care of its amount of arguments
-                Some(option) => {
-                    match option.handler {
-                        Handler::Args0(ftor) => ftor(self)?,
+                Some(option) => match option.handler {
+                    Handler::Args0(ftor) => ftor(self)?,
 
-                        Handler::Args1(name, ftor) => match args.pop_front() {
-                            None => fail!("Option {} expects additional argument for {}", option.lh, name),
+                    Handler::Args1(name, ftor) => match args.pop_front() {
+                        None => fail!(
+                            "Option {} expects additional argument for {}",
+                            option.lh,
+                            name
+                        ),
 
-                            Some(arg1) => ftor(self, &arg1)?,
-                        },
-                    }
-
+                        Some(arg1) => ftor(self, &arg1)?,
+                    },
                 },
             }
         }
@@ -252,9 +246,7 @@ impl Options {
         {
             let extension_sets = self.extension_sets.clone();
             for extension_set in extension_sets.iter() {
-                let mut add_extension = |extension|{
-                    self.extensions.push(OsString::from(extension))
-                };
+                let mut add_extension = |extension| self.extensions.push(OsString::from(extension));
                 if extension_set == &OsString::from("c") {
                     add_extension("c");
                     add_extension("h");
@@ -269,9 +261,12 @@ impl Options {
         Ok(())
     }
 
-    pub fn set_search_pattern(&mut self, pattern: &str ) {
+    pub fn set_search_pattern(&mut self, pattern: &str) {
         if let Some(old_pattern) = &self.search_pattern_opt {
-            println!("Warning: Search PATTERN is already set to '{}', setting it now to '{}'.", old_pattern, pattern);
+            println!(
+                "Warning: Search PATTERN is already set to '{}', setting it now to '{}'.",
+                old_pattern, pattern
+            );
         }
         self.search_pattern_opt = Some(pattern.to_string());
     }
@@ -279,26 +274,36 @@ impl Options {
     pub fn help(&self) -> String {
         let mut s = String::new();
 
-        s.push_str(&format!("Help for the Molybdenum Replacer: {}:\n", "mo --OPTION* PATTERN? --OPTION*".green()));
+        s.push_str(&format!(
+            "Help for the Molybdenum Replacer: {}:\n",
+            "mo --OPTION* PATTERN? --OPTION*".green()
+        ));
         s.push_str("Dashed options and search PATTERN can be mixed\n");
 
         s.push_str(&format!("{}:\n", "Options".yellow()));
         let option_vec = generate_option_vec();
-        let max_sh_len = option_vec.iter().map(|o|o.sh.len()).max().unwrap();
-        let max_lh_len = option_vec.iter().map(|o|o.lh.len()).max().unwrap();
-        let max_name_len = option_vec.iter().map(|o|{
-            if let Handler::Args1(name,_) = o.handler {
-                name.len()
-            } else {
-                0
-            }
-        }).max().unwrap();
+        let max_sh_len = option_vec.iter().map(|o| o.sh.len()).max().unwrap();
+        let max_lh_len = option_vec.iter().map(|o| o.lh.len()).max().unwrap();
+        let max_name_len = option_vec
+            .iter()
+            .map(|o| {
+                if let Handler::Args1(name, _) = o.handler {
+                    name.len()
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap();
         for o in option_vec.iter() {
             s.push_str(&o.help(max_sh_len, max_lh_len, max_name_len));
             s.push_str("\n");
         }
 
-        s.push_str(&format!("Version {}, created by Geert Fannes", env!("CARGO_PKG_VERSION")));
+        s.push_str(&format!(
+            "Version {}, created by Geert Fannes",
+            env!("CARGO_PKG_VERSION")
+        ));
 
         s
     }
@@ -321,17 +326,31 @@ struct Option {
 }
 
 impl Option {
-    fn new(sh:&'static str, lh:&'static str, descr:&'static str, handler: Handler) -> Option {
-        let o = Option{sh, lh, descr, handler};
+    fn new(sh: &'static str, lh: &'static str, descr: &'static str, handler: Handler) -> Option {
+        let o = Option {
+            sh,
+            lh,
+            descr,
+            handler,
+        };
         o
     }
 
     fn help(&self, max_sh_len: usize, max_lh_len: usize, name_len: usize) -> String {
         let name = match self.handler {
-            Handler::Args1(name,_) => name,
+            Handler::Args1(name, _) => name,
             _ => "",
         };
-        format!("    {:max_sh_len$}|{:max_lh_len$} {:name_len$}    {}", self.sh.yellow(), self.lh.yellow(), name.blue(), self.descr, max_sh_len = max_sh_len, max_lh_len = max_lh_len, name_len = name_len)
+        format!(
+            "    {:max_sh_len$}|{:max_lh_len$} {:name_len$}    {}",
+            self.sh.yellow(),
+            self.lh.yellow(),
+            name.blue(),
+            self.descr,
+            max_sh_len = max_sh_len,
+            max_lh_len = max_lh_len,
+            name_len = name_len
+        )
     }
 
     fn suit(&self, arg: &str) -> bool {
@@ -352,80 +371,121 @@ fn test_options_parse() {
     let scns = [
         //Positive scenarios
         //Single option
-        Scn{
+        Scn {
             args: vec!["-h"],
             parse_ok: true,
-            options: Options{output_help: true, ..Options::default()},
+            options: Options {
+                output_help: true,
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-v"],
             parse_ok: true,
-            options: Options{invert_pattern: true, ..Options::default()},
+            options: Options {
+                invert_pattern: true,
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-C", "ROOT"],
             parse_ok: true,
-            options: Options{roots: vec![String::from("ROOT")], ..Options::default()},
+            options: Options {
+                roots: vec![String::from("ROOT")],
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-C", "FOLDER1", "-C", "FOLDER2"],
             parse_ok: true,
-            options: Options{roots: vec![String::from("FOLDER1"), String::from("FOLDER2")], ..Options::default()},
+            options: Options {
+                roots: vec![String::from("FOLDER1"), String::from("FOLDER2")],
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-V", "3"],
             parse_ok: true,
-            options: Options{verbose_level: 3, ..Options::default()},
+            options: Options {
+                verbose_level: 3,
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["PATTERN"],
             parse_ok: true,
-            options: Options{search_pattern_opt: Some("PATTERN".to_string()),..Options::default()},
+            options: Options {
+                search_pattern_opt: Some("PATTERN".to_string()),
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["PATTERN1", "PATTERN2"],
             parse_ok: true,
-            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
+            options: Options {
+                search_pattern_opt: Some("PATTERN2".to_string()),
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["PATTERN1", "-p", "PATTERN2"],
             parse_ok: true,
-            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
+            options: Options {
+                search_pattern_opt: Some("PATTERN2".to_string()),
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-p", "PATTERN1", "-p", "PATTERN2"],
             parse_ok: true,
-            options: Options{search_pattern_opt: Some("PATTERN2".to_string()),..Options::default()},
+            options: Options {
+                search_pattern_opt: Some("PATTERN2".to_string()),
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["PATTERN", "-h"],
             parse_ok: true,
-            options: Options{output_help: true, search_pattern_opt: Some("PATTERN".to_string()), ..Options::default()},
+            options: Options {
+                output_help: true,
+                search_pattern_opt: Some("PATTERN".to_string()),
+                ..Options::default()
+            },
         },
         //All options
-        Scn{
+        Scn {
             args: vec!["-h", "-C", "ROOT"],
             parse_ok: true,
-            options: Options{output_help: true, roots: vec![String::from("ROOT")], ..Options::default()},
+            options: Options {
+                output_help: true,
+                roots: vec![String::from("ROOT")],
+                ..Options::default()
+            },
         },
-
         //Negative scenarios
-        Scn{
+        Scn {
             args: vec!["-C"],
             parse_ok: false,
-            options: Options{roots: vec![String::from("ROOT")], ..Options::default()},
+            options: Options {
+                roots: vec![String::from("ROOT")],
+                ..Options::default()
+            },
         },
-        Scn{
+        Scn {
             args: vec!["-C", "-h"],
             parse_ok: true,
-            options: Options{output_help: false, roots: vec![String::from("-h")], ..Options::default()},
+            options: Options {
+                output_help: false,
+                roots: vec![String::from("-h")],
+                ..Options::default()
+            },
         },
-        ];
+    ];
 
     for scn in scns.iter() {
         println!("{:?}", scn);
 
-        let args: Args = scn.args.iter().map(|s|{s.to_string()}).collect();
+        let args: Args = scn.args.iter().map(|s| s.to_string()).collect();
 
         let mut options = Options::new();
         let ok = options.parse(args).is_ok();
