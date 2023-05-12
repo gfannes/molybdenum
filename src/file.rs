@@ -12,6 +12,7 @@ pub struct Data {
     pub path: PathBuf,
     pub content: Content,
     pub lines: Vec<Line>,
+    pub filepaths: Vec<std::path::PathBuf>,
 }
 
 impl Data {
@@ -27,6 +28,7 @@ impl Data {
             path: PathBuf::new(),
             content: Content::new(),
             lines: vec![],
+            filepaths: vec![],
         }
     }
 

@@ -26,6 +26,7 @@ where
         }
     } else {
         for mut path in paths {
+            file_data.filepaths.push(path.clone());
             if path.starts_with(".") {
                 path = path.strip_prefix(".")?.to_path_buf();
             }
@@ -70,11 +71,13 @@ pub fn process_file(
 
                 let search = file_data.search_opt.as_ref().unwrap();
                 if options.output_only == Some(cli::OutputOnly::Filenames) {
+                    let fp = file_data.path.clone();
                     if options.null_separated_output {
-                        print!("{}\0", format!("{}", file_data.path.display()));
+                        print!("{}\0", format!("{}", fp.display()));
                     } else {
-                        println!("{}", format!("{}", file_data.path.display()));
+                        println!("{}", format!("{}", fp.display()));
                     }
+                    file_data.filepaths.push(fp);
                 } else {
                     if console_output {
                         println!("{}", format!("{}", file_data.path.display()).green().bold());

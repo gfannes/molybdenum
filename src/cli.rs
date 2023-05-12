@@ -39,6 +39,7 @@ pub struct Options {
     pub input_from_file_opt: std::option::Option<bool>,
     pub console_output: std::option::Option<bool>,
     pub color_output: std::option::Option<bool>,
+    pub open: bool,
 }
 
 //Default values for Options
@@ -69,6 +70,7 @@ impl Default for Options {
             input_from_file_opt: None,
             console_output: None,
             color_output: None,
+            open: false,
         }
     }
 }
@@ -192,6 +194,10 @@ fn generate_option_vec() -> Vec<Option> {
         })),
         Option::new("-k", "--color-output", "Produce colored output [false if output stream is TTY]", Handler::Args1("BOOLEAN", |options, boolean|{
             options.color_output = Some(parse_boolean(boolean));
+            Ok(())
+        })),
+        Option::new("-o", "--open", "Open files in editor", Handler::Args0(|options|{
+            options.open = true;
             Ok(())
         })),
         ]
