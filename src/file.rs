@@ -1,6 +1,6 @@
-use crate::util::Result;
-use crate::line::{Line, Content};
-use crate::search::{Search, Replace};
+use crate::line::{Content, Line};
+use crate::search::{Replace, Search};
+use crate::util::{MyError, Result};
 use std::io::Read;
 use std::io::Write;
 use std::path::PathBuf;
@@ -15,11 +15,15 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn new(search_opt: Option<Search>, invert_pattern: bool, replace_opt: Option<Replace>) -> Data {
-        Data{
+    pub fn new(
+        search_opt: Option<Search>,
+        invert_pattern: bool,
+        replace_opt: Option<Replace>,
+    ) -> Data {
+        Data {
             search_opt,
             invert_pattern,
-            replace_opt: replace_opt, 
+            replace_opt: replace_opt,
             path: PathBuf::new(),
             content: Content::new(),
             lines: vec![],
@@ -27,22 +31,23 @@ impl Data {
     }
 
     pub fn load<P>(&mut self, path: P) -> Result<()>
-        where P: AsRef<std::path::Path>
-        {
-            self.path = PathBuf::from(path.as_ref());
+    where
+        P: AsRef<std::path::Path>,
+    {
+        self.path = PathBuf::from(path.as_ref());
 
-            let mut f = std::fs::File::open(&self.path)?;
-            let md = f.metadata()?;
-            let md_size = md.len() as usize;
-            self.content.reserve(md_size);
-            self.content.clear();
-            let act_size = f.read_to_end(&mut self.content)?;
-            assert_eq!(md_size, act_size);
+        let mut f = std::fs::File::open(&self.path)?;
+        let md = f.metadata()?;
+        let md_size = md.len() as usize;
+        self.content.reserve(md_size);
+        self.content.clear();
+        let act_size = f.read_to_end(&mut self.content)?;
+        assert_eq!(md_size, act_size);
 
-            self.lines.clear();
+        self.lines.clear();
 
-            Ok(())
-        }
+        Ok(())
+    }
 
     pub fn split_in_lines(&mut self) -> Result<()> {
         let mut content = self.content.as_slice();
@@ -51,9 +56,9 @@ impl Data {
         while !content.is_empty() {
             line_nr += 1;
 
-            let size = match content.iter().position(|&v|{v==0x0a_u8}) {
+            let size = match content.iter().position(|&v| v == 0x0a_u8) {
                 None => content.len(),
-                Some(ix) => ix+1,
+                Some(ix) => ix + 1,
             };
 
             self.lines.push(Line::new(line_nr, start_ix, size));
@@ -74,7 +79,7 @@ impl Data {
                     found_match = line.search_for(&search, content) || found_match;
                 }
                 found_match
-            },
+            }
         }
     }
 
@@ -93,10 +98,19 @@ impl Data {
                         f.write(&line_slice[offset..r.start])?;
                         {
                             let match_bytes = &line_slice[r.start..r.end];
-                            let caps = search.regex.captures(match_bytes).unwrap();
+                            let caps = search.regex.captures(match_bytes);
                             for (capture_ix, part) in &replace.parts {
                                 if *capture_ix >= 0 {
-                                    f.write(caps.get(*capture_ix as usize).unwrap().as_bytes())?;
+                                    if caps.is_none() {
+                                        fail!("Could not search for capture groups, but they are used here. This happens when a search with word boundary does not match in the substring match_str");
+                                    }
+                                    f.write(
+                                        caps.as_ref()
+                                            .unwrap()
+                                            .get(*capture_ix as usize)
+                                            .unwrap()
+                                            .as_bytes(),
+                                    )?;
                                 }
                                 f.write(part.as_bytes())?;
                             }
@@ -105,7 +119,7 @@ impl Data {
                     }
                     f.write(&line_slice[offset..])?;
                 }
-            },
+            }
         }
         Ok(())
     }

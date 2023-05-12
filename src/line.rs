@@ -1,7 +1,7 @@
-use crate::util::{Range};
-use crate::search::{Search, Replace};
-use std::str::from_utf8;
+use crate::search::{Replace, Search};
+use crate::util::{MyError, Range};
 use colored::Colorize;
+use std::str::from_utf8;
 
 pub type Content = Vec<u8>;
 type ContentSlice = [u8];
@@ -14,9 +14,9 @@ pub struct Line {
 impl Line {
     //(start, size) indicate a part from some ContentSlice
     pub fn new(nr: u64, start: usize, size: usize) -> Line {
-        Line{
+        Line {
             nr,
-            range: start..start+size,
+            range: start..start + size,
             matches: vec![],
         }
     }
@@ -35,8 +35,13 @@ impl Line {
         found_match
     }
 
-    pub fn print_colored(&self, content: &ContentSlice, search: &Search, replace_opt: &Option<Replace>) {
-        let my_print = |replace_opt: &Option<Replace>|{
+    pub fn print_colored(
+        &self,
+        content: &ContentSlice,
+        search: &Search,
+        replace_opt: &Option<Replace>,
+    ) {
+        let my_print = |replace_opt: &Option<Replace>| {
             print!("{}:", format!("{}", self.nr).yellow());
             let mut offset = 0;
             for r in self.matches.iter() {
@@ -46,14 +51,28 @@ impl Line {
                         match &replace_opt {
                             None => print!("{}", match_str.bright_cyan().bold()),
                             Some(replace) => {
-                                let caps = search.regex.captures(match_str.as_bytes()).unwrap();
+                                let caps = search.regex.captures(match_str.as_bytes());
                                 for (capture_ix, part) in &replace.parts {
                                     if *capture_ix >= 0 {
-                                        print!("{}", from_utf8(caps.get(*capture_ix as usize).unwrap().as_bytes()).unwrap().on_purple());
+                                        if caps.is_none() {
+                                            fail!("Could not search for capture groups, but they are used here. This happens when a search with word boundary does not match in the substring match_str");
+                                        }
+                                        print!(
+                                            "{}",
+                                            from_utf8(
+                                                caps.as_ref()
+                                                    .unwrap()
+                                                    .get(*capture_ix as usize)
+                                                    .unwrap()
+                                                    .as_bytes()
+                                            )
+                                            .unwrap()
+                                            .on_purple()
+                                        );
                                     }
                                     print!("{}", part.on_purple());
                                 }
-                            },
+                            }
                         }
                     }
                 }
@@ -64,11 +83,13 @@ impl Line {
                     print!("{}", normal_str);
                 }
             }
+
+            Ok(())
         };
 
-        my_print(&None);
+        my_print(&None).ok();
         if replace_opt.is_some() {
-            my_print(replace_opt);
+            my_print(replace_opt).ok();
         }
     }
 
@@ -82,8 +103,14 @@ impl Line {
         }
         println!("");
     }
-    
-    pub fn replace_with(&self, content: &ContentSlice, search: &Search, replace: &Replace, output: &mut Vec<u8>) {
+
+    pub fn replace_with(
+        &self,
+        content: &ContentSlice,
+        search: &Search,
+        replace: &Replace,
+        output: &mut Vec<u8>,
+    ) {
         output.clear();
         let mut offset = 0;
         for r in self.matches.iter() {
@@ -100,7 +127,7 @@ impl Line {
         }
         output.extend_from_slice(&content[offset..]);
     }
-    
+
     pub fn only_matches(&self, content: &ContentSlice, output: &mut Vec<u8>) {
         output.clear();
         for r in self.matches.iter() {
