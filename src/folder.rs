@@ -68,27 +68,41 @@ impl Scanner<'_> {
             .build();
 
         for entry in walk {
-            let entry = entry?;
-            let file_type = match entry.file_type() {
-                None => fail!("Could not get file type for '{:?}'", entry),
-                Some(ft) => ft,
-            };
-            let path = entry.into_path();
-
-            let do_add_path = match self.options.output_only {
-                None | Some(OutputOnly::Match) => {
-                    true && file_type.is_file() && self.extension_ok_(&path) && self.name_ok_(&path)
+            match entry {
+                Err(err) => {
+                    if self.options.verbose_level >= 1 {
+                        println!("Warning: could not walk this entry: {:?}", err);
+                    }
                 }
+                Ok(entry) => {
+                    let file_type = match entry.file_type() {
+                        None => fail!("Could not get file type for '{:?}'", entry),
+                        Some(ft) => ft,
+                    };
+                    let path = entry.into_path();
 
-                Some(OutputOnly::Filenames) => {
-                    true && file_type.is_file() && self.extension_ok_(&path) && self.name_ok_(&path)
+                    let do_add_path = match self.options.output_only {
+                        None | Some(OutputOnly::Match) => {
+                            true && file_type.is_file()
+                                && self.extension_ok_(&path)
+                                && self.name_ok_(&path)
+                        }
+
+                        Some(OutputOnly::Filenames) => {
+                            true && file_type.is_file()
+                                && self.extension_ok_(&path)
+                                && self.name_ok_(&path)
+                        }
+
+                        Some(OutputOnly::Folders) => {
+                            true && file_type.is_dir() && self.name_ok_(&path)
+                        }
+                    };
+
+                    if do_add_path {
+                        paths.push(path.to_path_buf());
+                    }
                 }
-
-                Some(OutputOnly::Folders) => true && file_type.is_dir() && self.name_ok_(&path),
-            };
-
-            if do_add_path {
-                paths.push(path.to_path_buf());
             }
         }
         Ok(())
