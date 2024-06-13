@@ -191,3 +191,9 @@ I don't know how I can accomplish this scenario with `ag` and `rg` in a single c
 ### v0.1.9
 
 * When the search pattern is specified multiple time, the last one is actually used. This allows for a better integration with scripting where a default pattern is specified and might be updated later.
+
+### v0.1.10
+
+* When walking over folders with insufficient permission, these are skipped and processing continues.
+* Added support for opening file found with `$EDITOR` using the `-o` option. Best used in combo with `-l`.
+* Remove `-R` option
