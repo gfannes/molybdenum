@@ -165,7 +165,7 @@ fn all_binary_extensions_() -> BTreeSet<OsString> {
     let mut set = BTreeSet::<OsString>::new();
     for ext in &[
         "wav", "rlib", "rmeta", "dat", "bin", "exe", "png", "jpg", "jpeg", "pdf", "so", "a", "pyc",
-        "zip", "gz", "gzip", "o", "out",
+        "zip", "gz", "gzip", "o", "out", "dll",
     ] {
         set.insert(OsString::from(ext));
     }
